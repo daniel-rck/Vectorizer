@@ -5,8 +5,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import type { ResultMessage } from "../../lib/potrace/protocol";
-import type { DisplaySettings, SourceImage, ViewMode } from "../types";
+import type { DisplayLayer, DisplaySettings, SourceImage, ViewMode } from "../types";
 
 const ACCENT = "#fbbf24";
 
@@ -45,13 +44,17 @@ export function ViewTabs({
 
 export function Viewer({
   image,
-  result,
+  layers,
+  traced,
   display,
   seam,
   busy,
 }: {
   image: SourceImage | null;
-  result: ResultMessage | null;
+  /** Sichtbare Ebenen (nach Overrides), größte zuerst. */
+  layers: readonly DisplayLayer[];
+  /** true, sobald ein Trace-Ergebnis vorliegt (auch mit 0 Ebenen). */
+  traced: boolean;
   display: DisplaySettings;
   /** Naht-Behandlung (Farbmodus, mehrere Ebenen): stroke = fill. */
   seam: boolean;
@@ -88,7 +91,7 @@ export function Viewer({
           className="block h-auto max-w-full"
           style={{ opacity: view === "orig" ? 1 : overlay ? 0.35 : 0 }}
         />
-        {view !== "orig" && result ? (
+        {view !== "orig" && traced ? (
           <svg
             viewBox={`0 0 ${w} ${h}`}
             className="absolute inset-0 h-full w-full"
@@ -98,11 +101,10 @@ export function Viewer({
             {!overlay ? (
               <rect x={0} y={0} width={w} height={h} fill={display.bg} />
             ) : null}
-            {result.layers.map((layer) =>
-              // Palettenfarben sind pro Result eindeutig -> stabiler Key
+            {layers.map((layer) =>
               overlay ? (
                 <path
-                  key={layer.color}
+                  key={layer.id}
                   d={layer.d}
                   fill={layer.color}
                   fillOpacity={0.18}
@@ -111,7 +113,7 @@ export function Viewer({
                 />
               ) : (
                 <path
-                  key={layer.color}
+                  key={layer.id}
                   d={layer.d}
                   fill={layer.color}
                   fillRule="evenodd"
@@ -126,12 +128,12 @@ export function Viewer({
               ),
             )}
             {overlay && display.anchors
-              ? result.layers.flatMap((layer) => {
+              ? layers.flatMap((layer) => {
                   const marks = [];
                   for (let i = 0; i < layer.anchors.length; i += 2) {
                     marks.push(
                       <circle
-                        key={`${layer.color}:${i}`}
+                        key={`${layer.id}:${i}`}
                         cx={layer.anchors[i]}
                         cy={layer.anchors[i + 1]}
                         r={1.6}

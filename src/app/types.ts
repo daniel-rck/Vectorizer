@@ -1,4 +1,5 @@
 import { DEFAULT_PARAMS, type TraceParams } from "../lib/potrace/potrace";
+import type { TraceLayer } from "../lib/potrace/protocol";
 
 /** Alle Einstellungen, die einen Worker-Trace auslösen. */
 export interface TraceSettings {
@@ -39,6 +40,17 @@ export const DEFAULT_DISPLAY: DisplaySettings = {
   anchors: true,
   bg: "#ffffff",
 };
+
+/** Render-Overrides pro Ebene (Schlüssel: Originalfarbe der Ebene). */
+export interface LayerOverride {
+  hidden?: boolean;
+  color?: string;
+}
+
+/** Sichtbare Ebene nach Overrides; id = Originalfarbe (stabiler React-Key). */
+export interface DisplayLayer extends TraceLayer {
+  id: string;
+}
 
 export interface SourceImage {
   data: ImageData;

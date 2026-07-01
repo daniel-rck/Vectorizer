@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTraceWorker } from "./hooks/useTraceWorker";
+import { LayerPanel } from "./components/LayerPanel";
 import { OutputPanel } from "./components/OutputPanel";
 import { ParameterRail } from "./components/ParameterRail";
 import { StatsBar } from "./components/StatsBar";
@@ -10,7 +11,9 @@ import { buildSvg, svgByteSize } from "./lib/svg";
 import {
   DEFAULT_DISPLAY,
   DEFAULT_SETTINGS,
+  type DisplayLayer,
   type DisplaySettings,
+  type LayerOverride,
   type SourceImage,
   type TraceSettings,
 } from "./types";
@@ -29,6 +32,8 @@ export function App() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showBusy, setShowBusy] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [overrides, setOverrides] = useState<Record<string, LayerOverride>>({});
+  const [lockedPalette, setLockedPalette] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const versionRef = useRef(0);
 
@@ -36,6 +41,8 @@ export function App() {
     (data: ImageData, scaled: boolean) => {
       versionRef.current++;
       setLoadError(null);
+      setOverrides({});
+      setLockedPalette(null);
       worker.clear();
       worker.sendImage(data);
       setImage({ data, scaled, version: versionRef.current });
@@ -68,9 +75,12 @@ export function App() {
   // Parameteränderung / neues Bild -> debounced Trace (Job-Superseding im Hook)
   useEffect(() => {
     if (!image) return;
-    const timer = window.setTimeout(() => worker.trace(settings), TRACE_DEBOUNCE_MS);
+    const timer = window.setTimeout(
+      () => worker.trace(settings, lockedPalette ?? undefined),
+      TRACE_DEBOUNCE_MS,
+    );
     return () => window.clearTimeout(timer);
-  }, [image, settings, worker.trace]);
+  }, [image, settings, lockedPalette, worker.trace]);
 
   // Busy-Indikator nur zeigen, wenn der Trace länger als BUSY_DELAY_MS läuft
   useEffect(() => {
@@ -102,12 +112,21 @@ export function App() {
   // Mono liefert auch bei leerem Bitmap eine Ebene (d "") — nur sichtbare zählen
   const contentLayers = useMemo(() => result?.layers.filter((l) => l.d) ?? [], [result]);
   const emptyResult = result !== null && contentLayers.length === 0;
-  const seam = settings.colorMode && contentLayers.length > 1;
+
+  // Ebenen-Overrides (Sichtbarkeit, Farbe) — reine Render-Operationen
+  const displayLayers = useMemo<DisplayLayer[]>(
+    () =>
+      contentLayers
+        .filter((l) => overrides[l.color]?.hidden !== true)
+        .map((l) => ({ ...l, id: l.color, color: overrides[l.color]?.color ?? l.color })),
+    [contentLayers, overrides],
+  );
+  const seam = settings.colorMode && displayLayers.length > 1;
 
   const svgString = useMemo(() => {
-    if (!result || !contentLayers.length) return "";
-    return buildSvg(contentLayers, result.w, result.h, { seam });
-  }, [result, contentLayers, seam]);
+    if (!result || !displayLayers.length) return "";
+    return buildSvg(displayLayers, result.w, result.h, { seam });
+  }, [result, displayLayers, seam]);
 
   const svgBytes = useMemo(() => (svgString ? svgByteSize(svgString) : 0), [svgString]);
 
@@ -132,6 +151,8 @@ export function App() {
           onClick={() => {
             setSettings({ ...DEFAULT_SETTINGS, params: { ...DEFAULT_SETTINGS.params } });
             setDisplay(DEFAULT_DISPLAY);
+            setOverrides({});
+            setLockedPalette(null);
           }}
           title="Alle Parameter auf Standard zurücksetzen"
           className="rounded border border-ink-600 px-3 py-1.5 text-[12px] hover:border-accent-500"
@@ -160,6 +181,7 @@ export function App() {
             palette={settings.colorMode ? (result?.palette ?? []) : []}
             usedThreshold={result?.usedThreshold ?? null}
             dims={dims}
+            paletteLocked={lockedPalette !== null}
             onSettings={(patch) => setSettings((s) => ({ ...s, ...patch }))}
             onDisplay={(patch) => setDisplay((d) => ({ ...d, ...patch }))}
             onPickFile={() => fileInputRef.current?.click()}
@@ -189,17 +211,49 @@ export function App() {
               </div>
               <Viewer
                 image={image}
-                result={result}
+                layers={displayLayers}
+                traced={result !== null}
                 display={display}
                 seam={seam}
                 busy={showBusy}
               />
               <StatsBar
                 result={result}
-                layerCount={contentLayers.length}
+                layerCount={displayLayers.length}
                 svgBytes={svgBytes}
                 colorMode={settings.colorMode}
               />
+              {settings.colorMode ? (
+                <LayerPanel
+                  layers={contentLayers}
+                  palette={result?.palette ?? []}
+                  overrides={overrides}
+                  lockedPalette={lockedPalette}
+                  onOverride={(color, patch) =>
+                    setOverrides((o) => ({ ...o, [color]: { ...o[color], ...patch } }))
+                  }
+                  onOmitBackground={() => {
+                    const bg = contentLayers[0]?.color;
+                    if (!bg) return;
+                    setOverrides((o) => ({
+                      ...o,
+                      [bg]: { ...o[bg], hidden: o[bg]?.hidden !== true },
+                    }));
+                  }}
+                  onLock={() =>
+                    setLockedPalette(result?.palette.map((p) => p.hex) ?? null)
+                  }
+                  onUnlock={() => setLockedPalette(null)}
+                  onLockedColor={(index, color) =>
+                    setLockedPalette((lp) => {
+                      if (!lp) return lp;
+                      const next = [...lp];
+                      next[index] = color;
+                      return next;
+                    })
+                  }
+                />
+              ) : null}
               <OutputPanel svg={svgString} />
             </main>
 

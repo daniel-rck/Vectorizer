@@ -18,6 +18,7 @@ export function ParameterRail({
   palette,
   usedThreshold,
   dims,
+  paletteLocked,
   onSettings,
   onDisplay,
   onPickFile,
@@ -30,6 +31,8 @@ export function ParameterRail({
   usedThreshold: number | null;
   /** Anzeige "BxH (skaliert)" nach Bildaufnahme. */
   dims: string | null;
+  /** Palette ist gepinnt — Farbanzahl-Slider wirkungslos. */
+  paletteLocked?: boolean;
   onSettings: (patch: Partial<TraceSettings>) => void;
   onDisplay: (patch: Partial<DisplaySettings>) => void;
   onPickFile: () => void;
@@ -162,7 +165,12 @@ export function ParameterRail({
               min={2}
               max={16}
               onChange={(v) => onSettings({ paletteSize: v })}
-              hint="Bild wird auf so viele Farben reduziert, je Farbe eine getracte Ebene."
+              hint={
+                paletteLocked
+                  ? "Palette ist gepinnt — Regler wirkt erst nach dem Lösen."
+                  : "Bild wird auf so viele Farben reduziert, je Farbe eine getracte Ebene."
+              }
+              dimmed={paletteLocked}
             />
             {palette.length ? (
               <div className="flex flex-wrap gap-1">

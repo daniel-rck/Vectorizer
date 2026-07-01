@@ -9,7 +9,13 @@
 
 import { Bitmap, trace, toSVGPathData, type TraceResult } from "../lib/potrace/potrace";
 import { despeckle, otsu } from "../lib/potrace/quality";
-import { quantizeImage, rgbToHex, type Quantization } from "../lib/potrace/quantize";
+import {
+  hexToRgb,
+  quantizeImage,
+  quantizeWithPalette,
+  rgbToHex,
+  type Quantization,
+} from "../lib/potrace/quantize";
 import type {
   ResultMessage,
   TraceLayer,
@@ -61,12 +67,22 @@ function collectStats(res: TraceResult, st: TraceStats): void {
   }
 }
 
-function getQuant(k: number, useDespeckle: boolean): Quantization {
-  const key = `${k}_${useDespeckle ? 1 : 0}`;
+function getQuant(
+  k: number,
+  useDespeckle: boolean,
+  lockedPalette?: string[],
+): Quantization {
+  // Gepinnte Palette geht in den Cache-Schlüssel ein (max. 16 Einträge)
+  const key = lockedPalette
+    ? `L_${lockedPalette.join(",")}_${useDespeckle ? 1 : 0}`
+    : `${k}_${useDespeckle ? 1 : 0}`;
   const hit = quantCache.get(key);
   if (hit) return hit;
   if (!img) throw new Error("kein Bild geladen");
-  const q = quantizeImage(srcFor(useDespeckle), img.w, img.h, k);
+  const src = srcFor(useDespeckle);
+  const q = lockedPalette
+    ? quantizeWithPalette(src, img.w, img.h, lockedPalette.map(hexToRgb))
+    : quantizeImage(src, img.w, img.h, k);
   quantCache.set(key, q);
   return q;
 }
@@ -80,7 +96,7 @@ function handleTrace(msg: TraceMessage): ResultMessage {
   let usedThreshold: number | null = null;
 
   if (msg.colorMode) {
-    const q = getQuant(msg.paletteSize, msg.despeckle);
+    const q = getQuant(msg.paletteSize, msg.despeckle, msg.lockedPalette);
     const order = q.palette
       .map((_, i) => i)
       .filter((i) => q.area[i] > 0)

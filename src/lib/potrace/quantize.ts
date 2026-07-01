@@ -153,11 +153,24 @@ export function quantizeImage(
   h: number,
   k: number,
 ): Quantization {
-  const palette = buildPalette(d, k);
-  const palLab = palette.map((c) => rgb2lab(c[0], c[1], c[2]));
+  return quantizeWithPalette(d, w, h, buildPalette(d, k));
+}
+
+/**
+ * Zuordnung gegen eine feste Palette (Paletten-Locking): keine neue
+ * Median-Cut-Palette, nur LAB-Zuordnung der Pixel.
+ */
+export function quantizeWithPalette(
+  d: Uint8ClampedArray,
+  w: number,
+  h: number,
+  palette: RGB[],
+): Quantization {
   const idx = new Int16Array(w * h);
   idx.fill(-1);
   const area = new Array<number>(palette.length).fill(0);
+  if (!palette.length) return { idx, palette, area };
+  const palLab = palette.map((c) => rgb2lab(c[0], c[1], c[2]));
   const lut = new Int16Array(32768);
   lut.fill(-1);
   for (let i = 0, p = 0; i < d.length; i += 4, p++) {
@@ -175,6 +188,14 @@ export function quantizeImage(
     area[j]++;
   }
   return { idx, palette, area };
+}
+
+/** "#rrggbb" -> RGB. Ungültige Werte werden auf Schwarz abgebildet. */
+export function hexToRgb(hex: string): RGB {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return [0, 0, 0];
+  const v = Number.parseInt(m[1], 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
 }
 
 export function rgbToHex(c: RGB): string {
