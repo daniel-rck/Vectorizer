@@ -14,10 +14,13 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export function StatsBar({
   result,
+  layerCount,
   svgBytes,
   colorMode,
 }: {
   result: ResultMessage | null;
+  /** Sichtbare Ebenen (ohne leere Mono-Ebene). */
+  layerCount: number;
   svgBytes: number;
   colorMode: boolean;
 }) {
@@ -26,11 +29,7 @@ export function StatsBar({
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       <Stat
         label="Pfade"
-        value={
-          st
-            ? `${st.paths}${colorMode && result ? ` · ${result.layers.length} Ebenen` : ""}`
-            : "—"
-        }
+        value={st ? `${st.paths}${colorMode ? ` · ${layerCount} Ebenen` : ""}` : "—"}
       />
       <Stat label="Segmente" value={st ? String(st.seg) : "—"} />
       <Stat label="Kurven / Linien" value={st ? `${st.curves} / ${st.lines}` : "—"} />
