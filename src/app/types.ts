@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS: TraceSettings = {
   params: { ...DEFAULT_PARAMS },
 };
 
-export type ViewMode = "orig" | "vector" | "overlay";
+export type ViewMode = "orig" | "vector" | "overlay" | "compare";
 
 /** Reine Darstellungsoptionen — lösen keinen Re-Trace aus. */
 export interface DisplaySettings {
