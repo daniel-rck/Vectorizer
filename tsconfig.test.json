@@ -4,5 +4,10 @@
     "lib": ["ES2022", "WebWorker"],
     "types": ["bun"]
   },
-  "include": ["tests/**/*.ts", "src/lib/**/*.ts", "src/worker/**/*.ts"]
+  "include": [
+    "tests/**/*.ts",
+    "src/lib/**/*.ts",
+    "src/worker/**/*.ts",
+    "src/app/lib/svg.ts"
+  ]
 }
