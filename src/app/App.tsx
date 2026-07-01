@@ -7,6 +7,8 @@ import { StatsBar } from "./components/StatsBar";
 import { Viewer, ViewTabs } from "./components/Viewer";
 import { decodeImage } from "./lib/image";
 import { makeSampleImage } from "./lib/sample";
+import { loadSession, saveSession } from "./lib/session";
+import { takeSharedImage } from "./lib/share";
 import { buildSvg, svgByteSize } from "./lib/svg";
 import {
   DEFAULT_DISPLAY,
@@ -91,6 +93,52 @@ export function App() {
     const timer = window.setTimeout(() => setShowBusy(true), BUSY_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [worker.busy]);
+
+  // Start-Intake: "Öffnen mit" (File Handling API), geteiltes Bild
+  // (Share Target), sonst letzte Session wiederherstellen
+  const intakeRan = useRef(false);
+  useEffect(() => {
+    if (intakeRan.current) return;
+    intakeRan.current = true;
+    window.launchQueue?.setConsumer((params) => {
+      const handle = params.files?.[0];
+      if (handle) void handle.getFile().then((f) => loadBlob(f));
+    });
+    void (async () => {
+      if (new URLSearchParams(window.location.search).has("shared")) {
+        const blob = await takeSharedImage();
+        window.history.replaceState(null, "", "/");
+        if (blob) {
+          await loadBlob(blob);
+          return;
+        }
+      }
+      const saved = await loadSession();
+      // Nur wiederherstellen, wenn nicht inzwischen etwas geladen wurde
+      if (saved && versionRef.current === 0) {
+        setSettings(saved.settings);
+        setDisplay(saved.display);
+        const data = new ImageData(new Uint8ClampedArray(saved.buf), saved.w, saved.h);
+        applyImageData(data, saved.scaled);
+      }
+    })();
+  }, [loadBlob, applyImageData]);
+
+  // Session speichern (debounced) — letztes Bild + Parameter
+  useEffect(() => {
+    if (!image) return;
+    const timer = window.setTimeout(() => {
+      void saveSession({
+        buf: image.data.data.buffer.slice(0) as ArrayBuffer,
+        w: image.data.width,
+        h: image.data.height,
+        scaled: image.scaled,
+        settings,
+        display,
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [image, settings, display]);
 
   // Ganzes Fenster als Dropzone
   useEffect(() => {
