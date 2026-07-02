@@ -1,0 +1,1602 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E141B; --panel:#141D27; --panel-2:#1A2530; --inset:#0B1117;
+    --line:#26313D; --line-2:#33414F;
+    --ink:#D9E2EC; --dim:#8A98A8; --faint:#566372;
+    --accent:#E8A04C; --accent-dim:#7a5a2e;
+    --good:#5BC8A8;
+    --grid:#172029;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+    --sans:"Space Grotesk",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; line-height:1.45;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 60px}
+
+  /* header */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+    padding-bottom:18px;margin-bottom:22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 8px}
+  h1{font-size:26px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .sub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:6px}
+  .algo-link{color:var(--dim);text-decoration:none;border-bottom:1px dotted var(--faint)}
+  .algo-link:hover{color:var(--accent)}
+
+  .layout{display:grid;grid-template-columns:312px 1fr;gap:22px;align-items:start}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+
+  /* control rail */
+  .rail{display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h2{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--faint);margin:0 0 14px;font-weight:500;display:flex;justify-content:space-between}
+  .card h2 .badge{color:var(--dim)}
+
+  /* upload */
+  .drop{border:1px dashed var(--line-2);border-radius:8px;padding:18px 14px;text-align:center;
+    cursor:pointer;transition:.15s;background:var(--inset)}
+  .drop:hover,.drop.over{border-color:var(--accent);background:#10171f}
+  .drop strong{display:block;font-size:13px;margin-bottom:3px}
+  .drop span{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  .row-btns{display:flex;gap:8px;margin-top:10px}
+  .mini{flex:1;font-family:var(--mono);font-size:11px;padding:7px;border:1px solid var(--line-2);
+    background:transparent;color:var(--dim);border-radius:6px;cursor:pointer}
+  .mini:hover{color:var(--ink);border-color:var(--accent)}
+
+  /* controls */
+  .ctrl{margin-bottom:16px}
+  .ctrl:last-child{margin-bottom:0}
+  .ctrl label{display:flex;justify-content:space-between;align-items:baseline;
+    font-size:12.5px;margin-bottom:7px}
+  .ctrl label .val{font-family:var(--mono);font-size:12px;color:var(--accent)}
+  .ctrl .hint{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:5px;line-height:1.4}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--line-2);
+    border-radius:3px;outline:none;margin:4px 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--accent)}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);
+    cursor:pointer;border:2px solid var(--bg)}
+  select{width:100%;background:var(--inset);color:var(--ink);border:1px solid var(--line-2);
+    border-radius:6px;padding:7px 9px;font-family:var(--mono);font-size:12px;cursor:pointer}
+  .toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:12.5px}
+  .sw{width:38px;height:21px;background:var(--line-2);border-radius:20px;position:relative;transition:.15s;flex:none}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+    background:var(--dim);transition:.15s}
+  .toggle.on .sw{background:var(--accent-dim)}
+  .toggle.on .sw::after{transform:translateX(17px);background:var(--accent)}
+  .swatches{display:flex;gap:8px;align-items:center}
+  .swatch{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+  input[type=color]{-webkit-appearance:none;width:28px;height:24px;border:1px solid var(--line-2);
+    border-radius:5px;background:none;cursor:pointer;padding:0}
+  input[type=color]::-webkit-color-swatch{border:none;border-radius:4px}
+  input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+  .dimmed{opacity:.4;pointer-events:none;filter:saturate(.4)}
+  .palette-strip{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+  .chip{width:18px;height:18px;border-radius:4px;border:1px solid var(--line-2)}
+
+  /* work area */
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg{display:flex;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .seg button{flex:1;background:none;border:none;color:var(--dim);font-family:var(--mono);
+    font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:11px;cursor:pointer;
+    border-bottom:2px solid transparent;transition:.12s}
+  .seg button:hover{color:var(--ink)}
+  .seg button.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--panel)}
+  .viewer{position:relative;min-height:380px;display:flex;align-items:center;justify-content:center;
+    padding:22px;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:22px 22px;background-position:center}
+  .frame{position:relative;display:inline-block;max-width:100%;line-height:0;
+    box-shadow:0 0 0 1px var(--line-2),0 18px 50px -20px rgba(0,0,0,.7)}
+  #origCanvas{display:block;max-width:100%;max-height:540px;width:auto;height:auto;background:#fff}
+  #vecSvg{position:absolute;top:0;left:0;width:100%;height:100%}
+  .busy{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(14,20,27,.6);font-family:var(--mono);font-size:12px;color:var(--accent);
+    letter-spacing:.1em;z-index:5}
+  .busy.show{display:flex}
+  .empty{font-family:var(--mono);font-size:12px;color:var(--faint);text-align:center}
+
+  /* stats + output */
+  .below{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .stat{background:var(--panel);padding:13px 14px}
+  .stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .stat .v{font-family:var(--mono);font-size:19px;color:var(--ink);margin-top:5px;font-weight:500}
+  .stat .v small{font-size:12px;color:var(--dim);font-weight:400}
+  @media(max-width:540px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+  .out{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+  .out-head{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;
+    border-bottom:1px solid var(--line)}
+  .out-head span{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .out-actions{display:flex;gap:8px}
+  .act{font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;
+    border:1px solid var(--line-2);background:transparent;color:var(--ink);transition:.12s}
+  .act:hover{border-color:var(--accent);color:var(--accent)}
+  .act.primary{background:var(--accent);color:#1a1206;border-color:var(--accent);font-weight:500}
+  .act.primary:hover{background:#f0ab57;color:#1a1206}
+  pre.code{margin:0;padding:14px;max-height:200px;overflow:auto;font-family:var(--mono);
+    font-size:11px;color:var(--dim);white-space:pre-wrap;word-break:break-all;background:var(--inset)}
+  .foot{font-family:var(--mono);font-size:10.5px;color:var(--faint);text-align:center;margin-top:26px;line-height:1.6}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Raster → Vektor</p>
+      <h1>Potrace Vektorisierer</h1>
+      <div class="sub">Polygon-basiertes Bitmap-Tracing nach
+        <a class="algo-link" href="https://gitlab.com/inkscape/inkscape/-/tree/master/src/trace/potrace" target="_blank">Selinger / Inkscape</a>
+        — clientseitig, eigenständig implementiert</div>
+    </div>
+    <button class="act" id="resetBtn" title="Alle Parameter auf Standard zurücksetzen">↺&nbsp; Zurücksetzen</button>
+  </header>
+
+  <div class="layout">
+    <!-- CONTROL RAIL -->
+    <aside class="rail">
+      <div class="card">
+        <h2>Bildquelle</h2>
+        <div class="drop" id="drop">
+          <strong>Bild ablegen oder wählen</strong>
+          <span>PNG · JPG · SVG-Raster · WEBP</span>
+        </div>
+        <input type="file" id="file" accept="image/*" hidden>
+        <div class="row-btns">
+          <button class="mini" id="sampleBtn">Beispiel laden</button>
+          <button class="mini" id="pickBtn">Datei wählen</button>
+        </div>
+      </div>
+
+      <div class="card" id="threshCard">
+        <h2>Schwellwert <span class="badge" id="dimBadge">—</span></h2>
+        <div class="ctrl">
+          <div class="toggle on" id="autoThTgl"><span>Automatisch (Otsu)</span><div class="sw"></div></div>
+        </div>
+        <div class="ctrl dimmed" id="thCtrl">
+          <label>Helligkeitsgrenze <span class="val" id="thVal">128</span></label>
+          <input type="range" id="threshold" min="1" max="254" value="128">
+          <div class="hint">Pixel dunkler als die Grenze werden gefüllt.</div>
+        </div>
+        <div class="ctrl">
+          <div class="toggle" id="invertTgl"><span>Invertieren (hell füllen)</span><div class="sw"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Trace-Parameter</h2>
+        <div class="ctrl">
+          <div class="toggle" id="despeckleTgl"><span>Despeckle (Median 3×3)</span><div class="sw"></div></div>
+          <div class="hint" style="margin-top:5px">Glättet Rauschen/JPEG-Artefakte vor dem Tracen.</div>
+        </div>
+        <div class="ctrl">
+          <label>Fleckfilter · turdsize <span class="val" id="turdVal">2</span></label>
+          <input type="range" id="turdsize" min="0" max="20" value="2">
+          <div class="hint">Unterdrückt Inseln bis zu dieser Fläche (px).</div>
+        </div>
+        <div class="ctrl">
+          <label>Eckenschwelle · alphamax <span class="val" id="alphaVal">1.00</span></label>
+          <input type="range" id="alphamax" min="0" max="134" value="100">
+          <div class="hint">Niedrig → mehr Ecken, hoch → mehr Rundungen.</div>
+        </div>
+        <div class="ctrl">
+          <div class="toggle on" id="optTgl"><span>Kurven optimieren</span><div class="sw"></div></div>
+        </div>
+        <div class="ctrl">
+          <label>Toleranz · opttolerance <span class="val" id="tolVal">0.20</span></label>
+          <input type="range" id="opttolerance" min="0" max="100" value="20">
+          <div class="hint">Wie stark Segmente zusammengefasst werden.</div>
+        </div>
+        <div class="ctrl">
+          <label>Drehregel · turnpolicy</label>
+          <select id="turnpolicy">
+            <option value="minority" selected>minority</option>
+            <option value="majority">majority</option>
+            <option value="black">black</option>
+            <option value="white">white</option>
+            <option value="left">left</option>
+            <option value="right">right</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Darstellung</h2>
+        <div class="ctrl">
+          <div class="toggle on" id="colorTgl"><span>Farbig (mehrere Ebenen)</span><div class="sw"></div></div>
+        </div>
+        <div class="ctrl" id="paletteCtrl">
+          <label>Farben <span class="val" id="palVal">6</span></label>
+          <input type="range" id="paletteSize" min="2" max="16" value="6">
+          <div class="hint">Bild wird auf so viele Farben reduziert, je Farbe eine getracte Ebene.</div>
+          <div class="palette-strip" id="paletteStrip"></div>
+        </div>
+        <div class="ctrl swatches">
+          <div class="swatch" id="fillSwatch"><input type="color" id="fillColor" value="#0E141B"> Füllung</div>
+          <div class="swatch"><input type="color" id="bgColor" value="#ffffff"> Hintergrund</div>
+        </div>
+        <div class="ctrl" style="margin-top:14px">
+          <div class="toggle on" id="anchorTgl"><span>Ankerpunkte im Overlay</span><div class="sw"></div></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- WORK AREA -->
+    <main>
+      <div class="stage">
+        <div class="seg" id="seg">
+          <button data-view="orig">Original</button>
+          <button data-view="vector" class="active">Vektor</button>
+          <button data-view="overlay">Overlay</button>
+        </div>
+        <div class="viewer" id="viewer">
+          <div class="empty" id="emptyMsg">Kein Bild geladen — „Beispiel laden“ oder eigenes Bild ablegen.</div>
+          <div class="frame" id="frame" style="display:none">
+            <canvas id="origCanvas"></canvas>
+            <svg id="vecSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <div class="busy" id="busy">TRACING…</div>
+        </div>
+      </div>
+
+      <div class="below">
+        <div class="stats">
+          <div class="stat"><div class="k">Pfade</div><div class="v" id="sPaths">—</div></div>
+          <div class="stat"><div class="k">Segmente</div><div class="v" id="sSeg">—</div></div>
+          <div class="stat"><div class="k">Kurven / Linien</div><div class="v" id="sCL">—</div></div>
+          <div class="stat"><div class="k">SVG-Größe</div><div class="v" id="sSize">—</div></div>
+        </div>
+
+        <div class="out">
+          <div class="out-head">
+            <span>SVG-Ausgabe</span>
+            <div class="out-actions">
+              <button class="act" id="copyBtn">Kopieren</button>
+              <button class="act primary" id="dlBtn">SVG herunterladen</button>
+            </div>
+          </div>
+          <pre class="code" id="svgCode">—</pre>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="foot">
+    Vollständig im Browser · keine Uploads · Phasen: Pfadzerlegung → Polygon (DP) → Vertex-Least-Squares → Glättung → Kurvenoptimierung
+  </div>
+</div>
+
+<script id="potraceCore">
+// potrace.js — eigenständige Neuimplementierung des Potrace-Algorithmus
+// (nach Peter Selinger: "Potrace: a polygon-based tracing algorithm")
+// Eingabe: binäre Bitmap (1 = gefüllt/schwarz, 0 = leer/weiß)
+// Ausgabe: SVG-Pfaddaten (Bézier-Kurven + Linien)
+
+// ---------- Bitmap ----------
+class Bitmap {
+  constructor(w, h, data) {
+    this.w = w;
+    this.h = h;
+    this.size = w * h;
+    this.data = data || new Uint8Array(this.size);
+  }
+  at(x, y) {
+    return x >= 0 && x < this.w && y >= 0 && y < this.h && this.data[this.w * y + x] === 1;
+  }
+  index(i) {
+    return { x: i % this.w, y: (i / this.w) | 0 };
+  }
+  flip(x, y) {
+    const i = this.w * y + x;
+    this.data[i] = this.data[i] ? 0 : 1;
+  }
+  copy() {
+    return new Bitmap(this.w, this.h, this.data.slice());
+  }
+}
+
+// ---------- Hilfsstrukturen ----------
+const Q = (q) => (q < 0 ? 0 : q > 255 ? 255 : q); // unbenutzt, Platzhalter
+
+class Path {
+  constructor() {
+    this.area = 0;
+    this.len = 0;
+    this.pt = []; // {x,y}
+    this.minX = 100000; this.minY = 100000;
+    this.maxX = -1; this.maxY = -1;
+    this.sign = "";
+    // gefüllt in späteren Phasen:
+    this.x0 = 0; this.y0 = 0;
+    this.sums = [];
+    this.lon = [];
+    this.po = [];
+    this.m = 0;
+    this.curve = null;
+  }
+}
+
+class Curve {
+  constructor(n) {
+    this.n = n;
+    this.tag = new Array(n);        // "CURVE" | "CORNER"
+    this.c = new Array(n * 3);      // Kontrollpunkte (3 pro Segment)
+    this.alphaCurve = 0;
+    this.vertex = new Array(n);
+    this.alpha = new Array(n);
+    this.alpha0 = new Array(n);
+    this.beta = new Array(n);
+  }
+}
+
+// ---------- Vektor-Mathematik ----------
+function dorth_infty(p0, p2) {
+  return { x: -sign(p2.y - p0.y), y: sign(p2.x - p0.x) };
+}
+function sign(x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }
+function mod(a, n) { return a >= n ? a % n : a >= 0 ? a : n - 1 - ((-1 - a) % n); }
+function xprod(p1, p2) { return p1.x * p2.y - p1.y * p2.x; }
+function cyclic(a, b, c) { return a <= c ? a <= b && b < c : a <= b || b < c; }
+function ddist(p, q) { return Math.sqrt((p.x - q.x) ** 2 + (p.y - q.y) ** 2); }
+function dpara(p0, p1, p2) {
+  const x1 = p1.x - p0.x, y1 = p1.y - p0.y, x2 = p2.x - p0.x, y2 = p2.y - p0.y;
+  return x1 * y2 - x2 * y1;
+}
+function cprod(p0, p1, p2, p3) {
+  const x1 = p1.x - p0.x, y1 = p1.y - p0.y, x2 = p3.x - p2.x, y2 = p3.y - p2.y;
+  return x1 * y2 - x2 * y1;
+}
+function iprod(p0, p1, p2) {
+  const x1 = p1.x - p0.x, y1 = p1.y - p0.y, x2 = p2.x - p0.x, y2 = p2.y - p0.y;
+  return x1 * x2 + y1 * y2;
+}
+function iprod1(p0, p1, p2, p3) {
+  const x1 = p1.x - p0.x, y1 = p1.y - p0.y, x2 = p3.x - p2.x, y2 = p3.y - p2.y;
+  return x1 * x2 + y1 * y2;
+}
+function interval(lambda, a, b) {
+  return { x: a.x + lambda * (b.x - a.x), y: a.y + lambda * (b.y - a.y) };
+}
+function bezier(t, p0, p1, p2, p3) {
+  const s = 1 - t;
+  return {
+    x: s*s*s*p0.x + 3*(s*s*t)*p1.x + 3*(t*t*s)*p2.x + t*t*t*p3.x,
+    y: s*s*s*p0.y + 3*(s*s*t)*p1.y + 3*(t*t*s)*p2.y + t*t*t*p3.y,
+  };
+}
+function tangent(p0, p1, p2, p3, q0, q1) {
+  const A = cprod(p0, p1, q0, q1);
+  const B = cprod(p1, p2, q0, q1);
+  const C = cprod(p2, p3, q0, q1);
+  const a = A - 2 * B + C;
+  const b = -2 * A + 2 * B;
+  const c = A;
+  const d = b * b - 4 * a * c;
+  if (a === 0 || d < 0) return -1.0;
+  const s = Math.sqrt(d);
+  const r1 = (-b + s) / (2 * a);
+  const r2 = (-b - s) / (2 * a);
+  if (r1 >= 0 && r1 <= 1) return r1;
+  if (r2 >= 0 && r2 <= 1) return r2;
+  return -1.0;
+}
+
+// ---------- Phase 1: Bitmap -> Pfadliste ----------
+function bmToPathlist(bm, info) {
+  const bm1 = bm.copy();
+  const pathlist = [];
+  let cur = { x: 0, y: 0 };
+
+  function findNext(point) {
+    let i = bm1.w * point.y + point.x;
+    while (i < bm1.size && bm1.data[i] !== 1) i++;
+    return i < bm1.size ? bm1.index(i) : null;
+  }
+
+  function majority(x, y) {
+    for (let i = 2; i < 5; i++) {
+      let ct = 0;
+      for (let a = -i + 1; a <= i - 1; a++) {
+        ct += bm1.at(x + a, y + i - 1) ? 1 : -1;
+        ct += bm1.at(x + i - 1, y + a - 1) ? 1 : -1;
+        ct += bm1.at(x + a - 1, y - i) ? 1 : -1;
+        ct += bm1.at(x - i, y + a) ? 1 : -1;
+      }
+      if (ct > 0) return 1;
+      if (ct < 0) return 0;
+    }
+    return 0;
+  }
+
+  function findPath(point) {
+    const path = new Path();
+    let x = point.x, y = point.y, dirx = 0, diry = 1, tmp;
+    path.sign = bm.at(point.x, point.y) ? "+" : "-";
+    while (true) {
+      path.pt.push({ x, y });
+      if (x > path.maxX) path.maxX = x;
+      if (x < path.minX) path.minX = x;
+      if (y > path.maxY) path.maxY = y;
+      if (y < path.minY) path.minY = y;
+      path.len++;
+      x += dirx; y += diry;
+      path.area -= x * diry;
+      if (x === point.x && y === point.y) break;
+      const l = bm1.at(x + (dirx + diry - 1) / 2, y + (diry - dirx - 1) / 2);
+      const r = bm1.at(x + (dirx - diry - 1) / 2, y + (diry + dirx - 1) / 2);
+      if (r && !l) {
+        if (info.turnpolicy === "right" ||
+            (info.turnpolicy === "black" && path.sign === "+") ||
+            (info.turnpolicy === "white" && path.sign === "-") ||
+            (info.turnpolicy === "majority" && majority(x, y)) ||
+            (info.turnpolicy === "minority" && !majority(x, y))) {
+          tmp = dirx; dirx = -diry; diry = tmp; // links
+        } else {
+          tmp = dirx; dirx = diry; diry = -tmp; // rechts
+        }
+      } else if (r) {
+        tmp = dirx; dirx = -diry; diry = tmp; // links
+      } else if (!l) {
+        tmp = dirx; dirx = diry; diry = -tmp; // rechts
+      }
+    }
+    return path;
+  }
+
+  function xorPath(path) {
+    let y1 = path.pt[0].y, len = path.len, x, y, maxX, minY;
+    for (let i = 1; i < len; i++) {
+      x = path.pt[i].x;
+      y = path.pt[i].y;
+      if (y !== y1) {
+        minY = y1 < y ? y1 : y;
+        maxX = path.maxX;
+        for (let j = x; j < maxX; j++) bm1.flip(j, minY);
+        y1 = y;
+      }
+    }
+  }
+
+  while ((cur = findNext(cur)) !== null) {
+    const path = findPath(cur);
+    xorPath(path);
+    if (path.area > info.turdsize) pathlist.push(path);
+  }
+  return pathlist;
+}
+
+// ---------- Phase 2: Pfad -> Polygon ----------
+function calcSums(path) {
+  path.x0 = path.pt[0].x;
+  path.y0 = path.pt[0].y;
+  path.sums = [];
+  const s = path.sums;
+  s.push({ x: 0, y: 0, xy: 0, x2: 0, y2: 0 });
+  for (let i = 0; i < path.len; i++) {
+    const x = path.pt[i].x - path.x0;
+    const y = path.pt[i].y - path.y0;
+    s.push({
+      x: s[i].x + x, y: s[i].y + y,
+      xy: s[i].xy + x * y, x2: s[i].x2 + x * x, y2: s[i].y2 + y * y,
+    });
+  }
+}
+
+function calcLon(path) {
+  const n = path.len, pt = path.pt;
+  const pivk = new Array(n), nc = new Array(n);
+  const ct = [0, 0, 0, 0];
+  path.lon = new Array(n);
+  const constraint = [{ x: 0, y: 0 }, { x: 0, y: 0 }];
+  const cur = { x: 0, y: 0 }, off = { x: 0, y: 0 }, dk = { x: 0, y: 0 };
+  let foundk;
+
+  let k = 0;
+  for (let i = n - 1; i >= 0; i--) {
+    if (pt[i].x !== pt[k].x && pt[i].y !== pt[k].y) k = i + 1;
+    nc[i] = k;
+  }
+
+  for (let i = n - 1; i >= 0; i--) {
+    ct[0] = ct[1] = ct[2] = ct[3] = 0;
+    let dir = (3 + 3 * (pt[mod(i + 1, n)].x - pt[i].x) + (pt[mod(i + 1, n)].y - pt[i].y)) / 2;
+    ct[dir]++;
+    constraint[0].x = 0; constraint[0].y = 0;
+    constraint[1].x = 0; constraint[1].y = 0;
+
+    k = nc[i];
+    let k1 = i;
+    while (true) {
+      foundk = 0;
+      dir = (3 + 3 * sign(pt[k].x - pt[k1].x) + sign(pt[k].y - pt[k1].y)) / 2;
+      ct[dir]++;
+      if (ct[0] && ct[1] && ct[2] && ct[3]) { pivk[i] = k1; foundk = 1; break; }
+      cur.x = pt[k].x - pt[i].x;
+      cur.y = pt[k].y - pt[i].y;
+      if (xprod(constraint[0], cur) < 0 || xprod(constraint[1], cur) > 0) break;
+      if (Math.abs(cur.x) <= 1 && Math.abs(cur.y) <= 1) {
+        // ok
+      } else {
+        off.x = cur.x + ((cur.y >= 0 && (cur.y > 0 || cur.x < 0)) ? 1 : -1);
+        off.y = cur.y + ((cur.x <= 0 && (cur.x < 0 || cur.y < 0)) ? 1 : -1);
+        if (xprod(constraint[0], off) >= 0) { constraint[0].x = off.x; constraint[0].y = off.y; }
+        off.x = cur.x + ((cur.y <= 0 && (cur.y < 0 || cur.x < 0)) ? 1 : -1);
+        off.y = cur.y + ((cur.x >= 0 && (cur.x > 0 || cur.y < 0)) ? 1 : -1);
+        if (xprod(constraint[1], off) <= 0) { constraint[1].x = off.x; constraint[1].y = off.y; }
+      }
+      k1 = k;
+      k = nc[k1];
+      if (!cyclic(k, i, k1)) break;
+    }
+    if (foundk === 0) {
+      dk.x = sign(pt[k].x - pt[k1].x);
+      dk.y = sign(pt[k].y - pt[k1].y);
+      cur.x = pt[k1].x - pt[i].x;
+      cur.y = pt[k1].y - pt[i].y;
+      const a = xprod(constraint[0], cur), b = xprod(constraint[0], dk);
+      const c = xprod(constraint[1], cur), d = xprod(constraint[1], dk);
+      let j = 10000000;
+      if (b < 0) j = Math.floor(a / -b);
+      if (d > 0) j = Math.min(j, Math.floor(-c / d));
+      pivk[i] = mod(k1 + j, n);
+    }
+  }
+
+  let j = pivk[n - 1];
+  path.lon[n - 1] = j;
+  for (let i = n - 2; i >= 0; i--) {
+    if (cyclic(i + 1, pivk[i], j)) j = pivk[i];
+    path.lon[i] = j;
+  }
+  for (let i = n - 1; cyclic(mod(i + 1, n), j, path.lon[i]); i--) path.lon[i] = j;
+}
+
+function penalty3(path, i, j) {
+  const n = path.len, pt = path.pt, sums = path.sums;
+  let r = 0;
+  if (j >= n) { j -= n; r = 1; }
+  let x, y, x2, xy, y2, k;
+  if (r === 0) {
+    x = sums[j + 1].x - sums[i].x;
+    y = sums[j + 1].y - sums[i].y;
+    x2 = sums[j + 1].x2 - sums[i].x2;
+    xy = sums[j + 1].xy - sums[i].xy;
+    y2 = sums[j + 1].y2 - sums[i].y2;
+    k = j + 1 - i;
+  } else {
+    x = sums[j + 1].x - sums[i].x + sums[n].x;
+    y = sums[j + 1].y - sums[i].y + sums[n].y;
+    x2 = sums[j + 1].x2 - sums[i].x2 + sums[n].x2;
+    xy = sums[j + 1].xy - sums[i].xy + sums[n].xy;
+    y2 = sums[j + 1].y2 - sums[i].y2 + sums[n].y2;
+    k = j + 1 - i + n;
+  }
+  const px = (pt[i].x + pt[j].x) / 2.0 - pt[0].x;
+  const py = (pt[i].y + pt[j].y) / 2.0 - pt[0].y;
+  const ey = pt[j].x - pt[i].x;
+  const ex = -(pt[j].y - pt[i].y);
+  const a = (x2 - 2 * x * px) / k + px * px;
+  const b = (xy - x * py - y * px) / k + px * py;
+  const c = (y2 - 2 * y * py) / k + py * py;
+  const s = ex * ex * a + 2 * ex * ey * b + ey * ey * c;
+  return Math.sqrt(s);
+}
+
+function bestPolygon(path) {
+  const n = path.len;
+  const pen = new Array(n + 1), prev = new Array(n + 1), clip0 = new Array(n);
+  const clip1 = new Array(n + 1), seg0 = new Array(n + 1), seg1 = new Array(n + 1);
+
+  for (let i = 0; i < n; i++) {
+    let c = mod(path.lon[mod(i - 1, n)] - 1, n);
+    if (c === i) c = mod(i + 1, n);
+    clip0[i] = c < i ? n : c;
+  }
+  let j = 1;
+  for (let i = 0; i < n; i++) {
+    while (j <= clip0[i]) { clip1[j] = i; j++; }
+  }
+  let i = 0;
+  for (j = 0; i < n; j++) { seg0[j] = i; i = clip0[i]; }
+  seg0[j] = n;
+  const m = j;
+  i = n;
+  for (j = m; j > 0; j--) { seg1[j] = i; i = clip1[i]; }
+  seg1[0] = 0;
+
+  pen[0] = 0;
+  for (j = 1; j <= m; j++) {
+    for (i = seg1[j]; i <= seg0[j]; i++) {
+      let best = -1;
+      for (let k = seg0[j - 1]; k >= clip1[i]; k--) {
+        const thispen = penalty3(path, k, i) + pen[k];
+        if (best < 0 || thispen < best) { prev[i] = k; best = thispen; }
+      }
+      pen[i] = best;
+    }
+  }
+  path.m = m;
+  path.po = new Array(m);
+  for (i = n, j = m - 1; i > 0; j--) { i = prev[i]; path.po[j] = i; }
+}
+
+// ---------- Phase 3: Polygon -> Vertices (Least Squares) ----------
+function adjustVertices(path) {
+  const m = path.m, po = path.po, n = path.len, pt = path.pt;
+  const x0 = path.x0, y0 = path.y0;
+  const ctr = new Array(m), dir = new Array(m), q = new Array(m);
+  const v = [0, 0, 0];
+  let s = { x: 0, y: 0 };
+
+  path.curve = new Curve(m);
+
+  for (let i = 0; i < m; i++) {
+    let j = po[mod(i + 1, m)];
+    j = mod(j - po[i], n) + po[i];
+    ctr[i] = { x: 0, y: 0 }; dir[i] = { x: 0, y: 0 };
+    pointslope(path, po[i], j, ctr[i], dir[i]);
+  }
+
+  for (let i = 0; i < m; i++) {
+    q[i] = [[0,0,0],[0,0,0],[0,0,0]];
+    let d = dir[i].x * dir[i].x + dir[i].y * dir[i].y;
+    if (d === 0) {
+      for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) q[i][j][k] = 0;
+    } else {
+      v[0] = dir[i].y; v[1] = -dir[i].x; v[2] = -v[1]*ctr[i].y - v[0]*ctr[i].x;
+      for (let l = 0; l < 3; l++)
+        for (let k = 0; k < 3; k++)
+          q[i][l][k] = v[l] * v[k] / d;
+    }
+  }
+
+  for (let i = 0; i < m; i++) {
+    const Q2 = [[0,0,0],[0,0,0],[0,0,0]];
+    const w = [0,0,0];
+    s.x = pt[po[i]].x - x0;
+    s.y = pt[po[i]].y - y0;
+    const j = mod(i - 1, m);
+    for (let l = 0; l < 3; l++)
+      for (let k = 0; k < 3; k++)
+        Q2[l][k] = q[j][l][k] + q[i][l][k];
+
+    while (true) {
+      const det = Q2[0][0]*Q2[1][1] - Q2[0][1]*Q2[1][0];
+      if (det !== 0) {
+        w[0] = (-Q2[0][2]*Q2[1][1] + Q2[1][2]*Q2[0][1]) / det;
+        w[1] = ( Q2[0][2]*Q2[1][0] - Q2[1][2]*Q2[0][0]) / det;
+        break;
+      }
+      if (Q2[0][0] > Q2[1][1]) { v[0]=-Q2[0][1]; v[1]=Q2[0][0]; }
+      else if (Q2[1][1]) { v[0]=-Q2[1][1]; v[1]=Q2[1][0]; }
+      else { v[0]=1; v[1]=0; }
+      const dd = v[0]*v[0] + v[1]*v[1];
+      v[2] = -v[1]*s.y - v[0]*s.x;
+      for (let l = 0; l < 3; l++)
+        for (let k = 0; k < 3; k++)
+          Q2[l][k] += v[l]*v[k]/dd;
+      w[0]=0; w[1]=0; // Fallback
+      // simple projection fallback
+      break;
+    }
+
+    let dx = Math.abs(w[0] - s.x), dy = Math.abs(w[1] - s.y);
+    if (dx <= 0.5 && dy <= 0.5) {
+      path.curve.vertex[i] = { x: w[0] + x0, y: w[1] + y0 };
+      continue;
+    }
+    // Constrained min innerhalb der Einheitszelle
+    let min = quadform(Q2, s);
+    let xv = s.x, yv = s.y;
+    if (Q2[0][0] !== 0) {
+      for (let z = 0; z < 2; z++) {
+        const wv = s.y - 0.5 + z;
+        const ww = -(Q2[1][0]*wv + Q2[2][0]) / Q2[0][0];
+        dx = Math.abs(ww - s.x);
+        const cand = Q2[0][0]*ww*ww + 2*Q2[1][0]*ww*wv + Q2[1][1]*wv*wv
+                   + 2*Q2[2][0]*ww + 2*Q2[2][1]*wv + Q2[2][2];
+        if (dx <= 0.5 && cand < min) { min = cand; xv = ww; yv = wv; }
+      }
+    }
+    if (Q2[1][1] !== 0) {
+      for (let z = 0; z < 2; z++) {
+        const wv = s.x - 0.5 + z;
+        const ww = -(Q2[0][1]*wv + Q2[2][1]) / Q2[1][1];
+        dy = Math.abs(ww - s.y);
+        const cand = Q2[0][0]*wv*wv + 2*Q2[1][0]*wv*ww + Q2[1][1]*ww*ww
+                   + 2*Q2[2][0]*wv + 2*Q2[2][1]*ww + Q2[2][2];
+        if (dy <= 0.5 && cand < min) { min = cand; xv = wv; yv = ww; }
+      }
+    }
+    for (let l = 0; l < 2; l++) {
+      for (let k = 0; k < 2; k++) {
+        const wv = s.x - 0.5 + l;
+        const ww = s.y - 0.5 + k;
+        const cand = Q2[0][0]*wv*wv + 2*Q2[1][0]*wv*ww + Q2[1][1]*ww*ww
+                   + 2*Q2[2][0]*wv + 2*Q2[2][1]*ww + Q2[2][2];
+        if (cand < min) { min = cand; xv = wv; yv = ww; }
+      }
+    }
+    path.curve.vertex[i] = { x: xv + x0, y: yv + y0 };
+  }
+}
+
+function pointslope(path, i, j, ctr, dir) {
+  const n = path.len, sums = path.sums;
+  let r = 0;
+  while (j >= n) { j -= n; r += 1; }
+  while (i >= n) { i -= n; r -= 1; }
+  while (j < 0) { j += n; r -= 1; }
+  while (i < 0) { i += n; r += 1; }
+  const x = sums[j + 1].x - sums[i].x + r * sums[n].x;
+  const y = sums[j + 1].y - sums[i].y + r * sums[n].y;
+  const x2 = sums[j + 1].x2 - sums[i].x2 + r * sums[n].x2;
+  const xy = sums[j + 1].xy - sums[i].xy + r * sums[n].xy;
+  const y2 = sums[j + 1].y2 - sums[i].y2 + r * sums[n].y2;
+  const k = j + 1 - i + r * n;
+  ctr.x = x / k; ctr.y = y / k;
+  let a = (x2 - x * x / k) / k;
+  let b = (xy - x * y / k) / k;
+  let c = (y2 - y * y / k) / k;
+  const lambda2 = (a + c + Math.sqrt((a - c) * (a - c) + 4 * b * b)) / 2;
+  a -= lambda2; c -= lambda2;
+  let l;
+  if (Math.abs(a) >= Math.abs(c)) {
+    l = Math.sqrt(a * a + b * b);
+    if (l !== 0) { dir.x = -b / l; dir.y = a / l; }
+  } else {
+    l = Math.sqrt(c * c + b * b);
+    if (l !== 0) { dir.x = -c / l; dir.y = b / l; }
+  }
+  if (l === 0) { dir.x = 0; dir.y = 0; }
+}
+
+function quadform(Q, w) {
+  const v = [w.x, w.y, 1];
+  let sum = 0;
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++)
+      sum += v[i] * Q[i][j] * v[j];
+  return sum;
+}
+
+// ---------- Phase 4: Glättung & Ecken ----------
+function smooth(path, info) {
+  const m = path.curve.n, curve = path.curve;
+  for (let i = 0; i < m; i++) {
+    const j = mod(i + 1, m), k = mod(i + 2, m);
+    const p4 = interval(0.5, curve.vertex[k], curve.vertex[j]);
+    let denom = ddenom(curve.vertex[i], curve.vertex[k]);
+    let alpha;
+    if (denom !== 0) {
+      let dd = dpara(curve.vertex[i], curve.vertex[j], curve.vertex[k]) / denom;
+      dd = Math.abs(dd);
+      alpha = dd > 1 ? 1 - 1.0 / dd : 0;
+      alpha = alpha / 0.75;
+    } else alpha = 4 / 3;
+    curve.alpha0[j] = alpha;
+    if (alpha >= info.alphamax) {
+      curve.tag[j] = "CORNER";
+      curve.c[3 * j + 1] = curve.vertex[j];
+      curve.c[3 * j + 2] = p4;
+    } else {
+      if (alpha < 0.55) alpha = 0.55;
+      else if (alpha > 1) alpha = 1;
+      const p2 = interval(0.5 + 0.5 * alpha, curve.vertex[i], curve.vertex[j]);
+      const p3 = interval(0.5 + 0.5 * alpha, curve.vertex[k], curve.vertex[j]);
+      curve.tag[j] = "CURVE";
+      curve.c[3 * j + 0] = p2;
+      curve.c[3 * j + 1] = p3;
+      curve.c[3 * j + 2] = p4;
+    }
+    curve.alpha[j] = alpha;
+    curve.beta[j] = 0.5;
+  }
+  curve.alphaCurve = 1;
+}
+
+function ddenom(p0, p2) {
+  const r = dorth_infty(p0, p2);
+  return r.y * (p2.x - p0.x) - r.x * (p2.y - p0.y);
+}
+
+// ---------- Phase 5: Kurvenoptimierung (optional) ----------
+function optiPenalty(path, i, j, res, opttolerance, convc, areac) {
+  const m = path.curve.n, curve = path.curve, vertex = curve.vertex;
+  if (i === j) return 1;
+  let k = i;
+  const i1 = mod(i + 1, m);
+  let k1 = mod(k + 1, m);
+  const conv = convc[k1];
+  if (conv === 0) return 1;
+  const d0 = ddist(vertex[i], vertex[i1]);
+  for (k = k1; k !== j; k = k1) {
+    k1 = mod(k + 1, m);
+    const k2 = mod(k + 2, m);
+    if (convc[k1] !== conv) return 1;
+    if (sign(cprod(vertex[i], vertex[i1], vertex[k1], vertex[k2])) !== conv) return 1;
+    if (iprod1(vertex[i], vertex[i1], vertex[k1], vertex[k2]) <
+        d0 * ddist(vertex[k1], vertex[k2]) * (-0.999847695156)) return 1;
+  }
+  const p0 = { x: curve.c[mod(i, m) * 3 + 2].x, y: curve.c[mod(i, m) * 3 + 2].y };
+  let p1 = { x: vertex[mod(i + 1, m)].x, y: vertex[mod(i + 1, m)].y };
+  let p2 = { x: vertex[mod(j, m)].x, y: vertex[mod(j, m)].y };
+  const p3 = { x: curve.c[mod(j, m) * 3 + 2].x, y: curve.c[mod(j, m) * 3 + 2].y };
+
+  let area = areac[j] - areac[i];
+  area -= dpara(vertex[0], curve.c[i * 3 + 2], curve.c[j * 3 + 2]) / 2;
+  if (i >= j) area += areac[m];
+
+  const A1 = dpara(p0, p1, p2);
+  const A2 = dpara(p0, p1, p3);
+  const A3 = dpara(p0, p2, p3);
+  const A4 = A1 + A3 - A2;
+  if (A2 === A1) return 1;
+  const t = A3 / (A3 - A4);
+  const s = A2 / (A2 - A1);
+  const A = A2 * t / 2.0;
+  if (A === 0.0) return 1;
+  const R = area / A;
+  const alpha = 2 - Math.sqrt(4 - R / 0.3);
+
+  res.c = [interval(t * alpha, p0, p1), interval(s * alpha, p3, p2)];
+  res.t = t; res.s = s; res.alpha = alpha;
+  p1 = res.c[0]; p2 = res.c[1];
+  res.pen = 0;
+
+  for (k = mod(i + 1, m); k !== j; k = k1) {
+    k1 = mod(k + 1, m);
+    const tt = tangent(p0, p1, p2, p3, vertex[k], vertex[k1]);
+    if (tt < -0.5) return 1;
+    const pt = bezier(tt, p0, p1, p2, p3);
+    const dd = ddist(vertex[k], vertex[k1]);
+    if (dd === 0.0) return 1;
+    const d1 = dpara(vertex[k], vertex[k1], pt) / dd;
+    if (Math.abs(d1) > opttolerance) return 1;
+    if (iprod(vertex[k], vertex[k1], pt) < 0 ||
+        iprod(vertex[k1], vertex[k], pt) < 0) return 1;
+    res.pen += d1 * d1;
+  }
+  for (k = i; k !== j; k = k1) {
+    k1 = mod(k + 1, m);
+    const tt = tangent(p0, p1, p2, p3, curve.c[k * 3 + 2], curve.c[k1 * 3 + 2]);
+    if (tt < -0.5) return 1;
+    const pt = bezier(tt, p0, p1, p2, p3);
+    const dd = ddist(curve.c[k * 3 + 2], curve.c[k1 * 3 + 2]);
+    if (dd === 0.0) return 1;
+    let d1 = dpara(curve.c[k * 3 + 2], curve.c[k1 * 3 + 2], pt) / dd;
+    let d2 = dpara(curve.c[k * 3 + 2], curve.c[k1 * 3 + 2], vertex[k1]) / dd;
+    d2 *= 0.75 * curve.alpha[k1];
+    if (d2 < 0) { d1 = -d1; d2 = -d2; }
+    if (d1 < d2 - opttolerance) return 1;
+    if (d1 < d2) res.pen += (d1 - d2) * (d1 - d2);
+  }
+  return 0;
+}
+function optiCurve(path, info) {
+  const curve = path.curve, m = curve.n, vert = curve.vertex;
+  const pt = new Array(m + 1), pen = new Array(m + 1), len = new Array(m + 1);
+  const opt = new Array(m + 1);
+  const convc = new Array(m), areac = new Array(m + 1);
+  const o = {};
+
+  for (let i = 0; i < m; i++) {
+    if (curve.tag[i] === "CURVE")
+      convc[i] = sign(dpara(vert[mod(i - 1, m)], vert[i], vert[mod(i + 1, m)]));
+    else convc[i] = 0;
+  }
+  let area = 0.0;
+  areac[0] = 0.0;
+  const p0 = curve.vertex[0];
+  for (let i = 0; i < m; i++) {
+    const i1 = mod(i + 1, m);
+    if (curve.tag[i1] === "CURVE") {
+      const a = curve.alpha[i1];
+      area += 0.3 * a * (4 - a) * dpara(curve.c[i * 3 + 2], vert[i1], curve.c[i1 * 3 + 2]) / 2;
+      area += dpara(p0, curve.c[i * 3 + 2], curve.c[i1 * 3 + 2]) / 2;
+    }
+    areac[i + 1] = area;
+  }
+
+  pt[0] = -1; pen[0] = 0; len[0] = 0;
+  for (let j = 1; j <= m; j++) {
+    pt[j] = j - 1; pen[j] = pen[j - 1]; len[j] = len[j - 1] + 1;
+    for (let i = j - 2; i >= 0; i--) {
+      const r = optiPenalty(path, i, mod(j, m), o, info.opttolerance, convc, areac);
+      if (r) break;
+      if (len[j] > len[i] + 1 || (len[j] === len[i] + 1 && pen[j] > pen[i] + o.pen)) {
+        pt[j] = i; pen[j] = pen[i] + o.pen; len[j] = len[i] + 1;
+        opt[j] = { c: o.c, t: o.t, s: o.s, alpha: o.alpha }; 
+      }
+    }
+  }
+  const om = len[m];
+  const ocurve = new Curve(om);
+  const s = new Array(om), t = new Array(om);
+  let j = m;
+  for (let i = om - 1; i >= 0; i--) {
+    if (pt[j] === j - 1) {
+      ocurve.tag[i] = curve.tag[mod(j, m)];
+      ocurve.c[i * 3 + 0] = curve.c[mod(j, m) * 3 + 0];
+      ocurve.c[i * 3 + 1] = curve.c[mod(j, m) * 3 + 1];
+      ocurve.c[i * 3 + 2] = curve.c[mod(j, m) * 3 + 2];
+      ocurve.vertex[i] = curve.vertex[mod(j, m)];
+      ocurve.alpha[i] = curve.alpha[mod(j, m)];
+      ocurve.alpha0[i] = curve.alpha0[mod(j, m)];
+      ocurve.beta[i] = curve.beta[mod(j, m)];
+    } else {
+      ocurve.tag[i] = "CURVE";
+      ocurve.c[i * 3 + 0] = opt[j].c[0];
+      ocurve.c[i * 3 + 1] = opt[j].c[1];
+      ocurve.c[i * 3 + 2] = curve.c[mod(j, m) * 3 + 2];
+      ocurve.vertex[i] = interval(opt[j].s, curve.c[mod(j, m) * 3 + 2], vert[mod(j, m)]);
+      ocurve.alpha[i] = opt[j].alpha;
+      ocurve.alpha0[i] = opt[j].alpha;
+    }
+    j = pt[j];
+  }
+  ocurve.alphaCurve = 1;
+  path.curve = ocurve;
+}
+
+// ---------- Hauptfunktion ----------
+function trace(bm, opts = {}) {
+  const info = {
+    turnpolicy: opts.turnpolicy || "minority",
+    turdsize: opts.turdsize ?? 2,
+    alphamax: opts.alphamax ?? 1.0,
+    optcurve: opts.optcurve ?? true,
+    opttolerance: opts.opttolerance ?? 0.2,
+  };
+  const pathlist = bmToPathlist(bm, info);
+  for (const path of pathlist) {
+    calcSums(path);
+    calcLon(path);
+    bestPolygon(path);
+    adjustVertices(path);
+    smooth(path, info);
+    if (info.optcurve) {
+      try { optiCurve(path, info); } catch (e) { /* Optimierung übersprungen */ }
+    }
+  }
+  return { pathlist, w: bm.w, h: bm.h };
+}
+
+// ---------- SVG-Ausgabe ----------
+function toSVGPath(result, scale = 1) {
+  let d = "";
+  for (const path of result.pathlist) {
+    const curve = path.curve;
+    if (!curve) continue;
+    const n = curve.n;
+    const start = curve.c[(n - 1) * 3 + 2];
+    d += `M${fmt(start.x * scale)} ${fmt(start.y * scale)}`;
+    for (let i = 0; i < n; i++) {
+      if (curve.tag[i] === "CURVE") {
+        const c1 = curve.c[i * 3 + 0], c2 = curve.c[i * 3 + 1], c3 = curve.c[i * 3 + 2];
+        d += `C${fmt(c1.x*scale)} ${fmt(c1.y*scale)} ${fmt(c2.x*scale)} ${fmt(c2.y*scale)} ${fmt(c3.x*scale)} ${fmt(c3.y*scale)}`;
+      } else {
+        const c1 = curve.c[i * 3 + 1], c2 = curve.c[i * 3 + 2];
+        d += `L${fmt(c1.x*scale)} ${fmt(c1.y*scale)}L${fmt(c2.x*scale)} ${fmt(c2.y*scale)}`;
+      }
+    }
+    d += "Z";
+  }
+  return d;
+}
+function fmt(n) { return (Math.round(n * 1000) / 1000); }
+
+
+</script>
+
+<script id="workerGlue" type="text/plain">
+// worker-glue.js — läuft im Web Worker, nutzt den Potrace-Kern (Bitmap, trace)
+// Protokoll:
+//   {type:"image", buf:ArrayBuffer(RGBA), w, h}            -> Bild speichern, Caches leeren
+//   {type:"trace", job, colorMode, paletteSize, params, fill}
+// Antwort:
+//   {type:"result", job, layers:[{color,d,anchors:Float64Array-Buffer}], palette:[{hex,area}], stats:{paths,seg,curves,lines}}
+
+var IMG = null;  // {d:Uint8ClampedArray, w, h}
+var FIMG = null; // despeckelte Variante (Cache, einmal pro Bild)
+var OTSU = {};   // Otsu-Cache pro Quelldaten (roh/gefiltert)
+var QCACHE = {}; // key(paletteSize,despeckle) -> {idx, pal, area}
+function srcFor(useDespeckle){
+  if(!useDespeckle) return IMG.d;
+  if(!FIMG) FIMG = despeckle(IMG.d, IMG.w, IMG.h);
+  return FIMG;
+}
+
+function nfmt(n){
+  var s = (Math.round(n*1000)/1000).toString();
+  if (s.charAt(0)==="0" && s.charAt(1)===".") s = s.slice(1);
+  else if (s.indexOf("-0.")===0) s = "-"+s.slice(2);
+  return s;
+}
+function pair(x,y){
+  var sy = nfmt(y);
+  return nfmt(x) + (sy.charAt(0)==="-" ? "" : " ") + sy;
+}
+function q3(n){ return Math.round(n*1000)/1000; }
+
+// Relative Pfadkodierung (verifiziert: 0 Drift, ~35% kleiner bei komplexem Inhalt)
+function pathToD(res){
+  var out="";
+  for(var pi=0; pi<res.pathlist.length; pi++){
+    var cv=res.pathlist[pi].curve; if(!cv) continue;
+    var n=cv.n;
+    var cx=q3(cv.c[(n-1)*3+2].x), cy=q3(cv.c[(n-1)*3+2].y);
+    out += "M"+pair(cx,cy);
+    for(var i=0;i<n;i++){
+      if(cv.tag[i]==="CURVE"){
+        var c1=cv.c[i*3], c2=cv.c[i*3+1], c3=cv.c[i*3+2];
+        var sx=cx, sy=cy;
+        var d1x=q3(q3(c1.x)-sx), d1y=q3(q3(c1.y)-sy);
+        var d2x=q3(q3(c2.x)-sx), d2y=q3(q3(c2.y)-sy);
+        var d3x=q3(q3(c3.x)-sx), d3y=q3(q3(c3.y)-sy);
+        out += "c"+pair(d1x,d1y)+" "+pair(d2x,d2y)+" "+pair(d3x,d3y);
+        cx=q3(sx+d3x); cy=q3(sy+d3y);
+      } else {
+        var l1=cv.c[i*3+1], l2=cv.c[i*3+2];
+        var dx=q3(q3(l1.x)-cx), dy=q3(q3(l1.y)-cy);
+        cx=q3(cx+dx); cy=q3(cy+dy);
+        out += "l"+pair(dx,dy);
+        dx=q3(q3(l2.x)-cx); dy=q3(q3(l2.y)-cy);
+        cx=q3(cx+dx); cy=q3(cy+dy);
+        out += "l"+pair(dx,dy);
+      }
+    }
+    out+="z";
+  }
+  return out;
+}
+
+function collectAnchors(res, arr){
+  for(var pi=0;pi<res.pathlist.length;pi++){
+    var cv=res.pathlist[pi].curve; if(!cv) continue;
+    for(var i=0;i<cv.n;i++){ var v=cv.c[i*3+2]; arr.push(v.x, v.y); }
+  }
+}
+function collectStats(res, st){
+  for(var pi=0;pi<res.pathlist.length;pi++){
+    var cv=res.pathlist[pi].curve; if(!cv) continue;
+    st.paths++; st.seg+=cv.n;
+    for(var i=0;i<cv.n;i++){ if(cv.tag[i]==="CURVE") st.curves++; else st.lines++; }
+  }
+}
+
+// ---- Quantisierung (Median-Cut über distinkte Farben) ----
+function mkbox(e){
+  var rmn=255,rmx=0,gmn=255,gmx=0,bmn=255,bmx=0,sr=0,sg=0,sb=0,sc=0;
+  for(var i=0;i<e.length;i++){var p=e[i];
+    if(p.r<rmn)rmn=p.r; if(p.r>rmx)rmx=p.r;
+    if(p.g<gmn)gmn=p.g; if(p.g>gmx)gmx=p.g;
+    if(p.b<bmn)bmn=p.b; if(p.b>bmx)bmx=p.b;
+    sr+=p.r*p.cnt; sg+=p.g*p.cnt; sb+=p.b*p.cnt; sc+=p.cnt;}
+  sc=sc||1;
+  return {e:e, rR:rmx-rmn, rG:gmx-gmn, rB:bmx-bmn,
+          avg:[Math.round(sr/sc),Math.round(sg/sc),Math.round(sb/sc)]};
+}
+function quantize(d, K){
+  var SH=3, map=new Map();
+  for(var i=0;i<d.length;i+=4){
+    if(d[i+3]<128) continue;
+    var r=d[i],g=d[i+1],b=d[i+2];
+    var key=((r>>SH)<<10)|((g>>SH)<<5)|(b>>SH);
+    var e=map.get(key);
+    if(e){ e.c++; e.r+=r; e.g+=g; e.b+=b; } else map.set(key,{c:1,r:r,g:g,b:b});
+  }
+  if(!map.size) return [];
+  var entries=[]; map.forEach(function(e){ entries.push({r:e.r/e.c,g:e.g/e.c,b:e.b/e.c,cnt:e.c}); });
+  var boxes=[mkbox(entries)];
+  while(boxes.length<K){
+    var bi=-1,best=-1;
+    for(var i2=0;i2<boxes.length;i2++){var bx=boxes[i2]; if(bx.e.length<2)continue;
+      var rr=Math.max(bx.rR,bx.rG,bx.rB); if(rr>best){best=rr;bi=i2;}}
+    if(bi<0)break;
+    var bx2=boxes[bi];
+    var ch=(bx2.rR>=bx2.rG&&bx2.rR>=bx2.rB)?'r':(bx2.rG>=bx2.rB?'g':'b');
+    bx2.e.sort(function(p,q2){return p[ch]-q2[ch];});
+    var m=bx2.e.length>>1;
+    boxes.splice(bi,1, mkbox(bx2.e.slice(0,m)), mkbox(bx2.e.slice(m)));
+  }
+  var pal=[], labs=[];
+  for(var i3=0;i3<boxes.length;i3++){
+    var c=boxes[i3].avg, cl=rgb2lab(c[0],c[1],c[2]), dup=false;
+    for(var j=0;j<labs.length;j++){
+      if(labDist2(labs[j],cl)<6.25){dup=true;break;} // deltaE < 2.5 (~JND)
+    }
+    if(!dup){ pal.push(c); labs.push(cl); }
+  }
+  return pal;
+}
+function nearest(pal,r,g,b){
+  var bi=0,bd=Infinity;
+  for(var i=0;i<pal.length;i++){var c=pal[i];
+    var dd=(c[0]-r)*(c[0]-r)+(c[1]-g)*(c[1]-g)+(c[2]-b)*(c[2]-b);
+    if(dd<bd){bd=dd;bi=i;}}
+  return bi;
+}
+function hexc(c){
+  return '#'+('0'+(c[0]|0).toString(16)).slice(-2)
+            +('0'+(c[1]|0).toString(16)).slice(-2)
+            +('0'+(c[2]|0).toString(16)).slice(-2);
+}
+
+// ---- Qualitätsfunktionen: Otsu, Despeckle, CIELAB ----
+
+// ---- Otsu: optimale Schwelle aus Luminanz-Histogramm ----
+function otsu(d){
+  var hist=new Float64Array(256), total=0;
+  for(var i=0;i<d.length;i+=4){
+    var a=d[i+3]/255;
+    var lum=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    var eff=Math.round(lum*a+255*(1-a));
+    hist[eff]++; total++;
+  }
+  if(!total) return 128;
+  var sum=0; for(var t=0;t<256;t++) sum+=t*hist[t];
+  var sumB=0, wB=0, maxVar=-1, first=128, last=128;
+  for(var t2=0;t2<256;t2++){
+    wB+=hist[t2]; if(wB===0)continue;
+    var wF=total-wB; if(wF===0)break;
+    sumB+=t2*hist[t2];
+    var mB=sumB/wB, mF=(sum-sumB)/wF;
+    var v=wB*wF*(mB-mF)*(mB-mF);
+    if(v>maxVar){maxVar=v; first=t2; last=t2;}
+    else if(v===maxVar){last=t2;} // Plateau: im leeren Tal bit-identisch
+  }
+  return ((first+last)>>1)+1; // Plateau-Mitte: robust im leeren Tal
+}
+
+// ---- Despeckle: 3x3-Median pro Kanal ----
+function median9(v){ // Insertion-Sort auf 9 Werte, Median = v[4]
+  for(var i=1;i<9;i++){var k=v[i],j=i-1;while(j>=0&&v[j]>k){v[j+1]=v[j];j--;}v[j+1]=k;}
+  return v[4];
+}
+function despeckle(d, w, h){
+  var out=new Uint8ClampedArray(d.length);
+  var vr=new Array(9), vg=new Array(9), vb=new Array(9);
+  for(var y=0;y<h;y++){
+    for(var x=0;x<w;x++){
+      var o=(y*w+x)*4;
+      if(x===0||y===0||x===w-1||y===h-1){ // Rand kopieren
+        out[o]=d[o];out[o+1]=d[o+1];out[o+2]=d[o+2];out[o+3]=d[o+3];continue;
+      }
+      var n=0;
+      for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+        var p=((y+dy)*w+(x+dx))*4;
+        vr[n]=d[p];vg[n]=d[p+1];vb[n]=d[p+2];n++;
+      }
+      out[o]=median9(vr);out[o+1]=median9(vg);out[o+2]=median9(vb);out[o+3]=d[o+3];
+    }
+  }
+  return out;
+}
+
+// ---- CIELAB (D65) ----
+function srgb2lin(c){ c/=255; return c<=0.04045? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+function rgb2lab(r,g,b){
+  var lr=srgb2lin(r), lg=srgb2lin(g), lb=srgb2lin(b);
+  var X=(0.4124*lr+0.3576*lg+0.1805*lb)/0.95047;
+  var Y= 0.2126*lr+0.7152*lg+0.0722*lb;
+  var Z=(0.0193*lr+0.1192*lg+0.9505*lb)/1.08883;
+  var f=function(t){ return t>0.008856? Math.cbrt(t) : (7.787*t+16/116); };
+  var fx=f(X), fy=f(Y), fz=f(Z);
+  return [116*fy-16, 500*(fx-fy), 200*(fy-fz)];
+}
+function labDist2(l1,l2){
+  var dl=l1[0]-l2[0], da=l1[1]-l2[1], db=l1[2]-l2[2];
+  return dl*dl+da*da+db*db;
+}
+
+
+function getQuant(K, useDespeckle){
+  var key=K+"_"+(useDespeckle?1:0);
+  if(QCACHE[key]) return QCACHE[key];
+  var d=srcFor(useDespeckle), wh=IMG.w*IMG.h;
+  var pal=quantize(d,K);
+  var palLab=[]; for(var pi=0;pi<pal.length;pi++) palLab.push(rgb2lab(pal[pi][0],pal[pi][1],pal[pi][2]));
+  var idx=new Int16Array(wh); idx.fill(-1);
+  var area=new Array(pal.length); for(var a=0;a<area.length;a++)area[a]=0;
+  // LAB-Zuordnung über 32x32x32-Cache (identische Quantisierungs-Bins -> gleiche Zuordnung)
+  var lut=new Int16Array(32768); lut.fill(-1);
+  for(var i=0,p=0;i<d.length;i+=4,p++){
+    if(d[i+3]<128) continue;
+    var r=d[i],g=d[i+1],b=d[i+2];
+    var kk=((r>>3)<<10)|((g>>3)<<5)|(b>>3);
+    var j=lut[kk];
+    if(j<0){ j=nearestLab(palLab, rgb2lab(r,g,b)); lut[kk]=j; }
+    idx[p]=j; area[j]++;
+  }
+  QCACHE[key]={idx:idx,pal:pal,area:area};
+  return QCACHE[key];
+}
+function nearestLab(palLab, lab){
+  var bi=0,bd=Infinity;
+  for(var i=0;i<palLab.length;i++){
+    var dd=labDist2(palLab[i],lab);
+    if(dd<bd){bd=dd;bi=i;}
+  }
+  return bi;
+}
+
+function handleTrace(msg){
+  var params=msg.params, layers=[], palette=[];
+  var stats={paths:0,seg:0,curves:0,lines:0};
+  var w=IMG.w, h=IMG.h;
+  var usedThreshold=null;
+  if(msg.colorMode){
+    var Q2=getQuant(msg.paletteSize, msg.despeckle);
+    var order=[];
+    for(var i=0;i<Q2.pal.length;i++) if(Q2.area[i]>0) order.push(i);
+    order.sort(function(a,b){return Q2.area[b]-Q2.area[a];});
+    for(var oi=0;oi<order.length;oi++){
+      var j=order[oi];
+      var bm=new Bitmap(w,h);
+      var idx=Q2.idx;
+      for(var p=0;p<idx.length;p++) bm.data[p]= idx[p]===j?1:0;
+      var res=trace(bm, params);
+      var d=pathToD(res);
+      if(!d) continue;
+      var anchors=[];
+      collectAnchors(res, anchors);
+      collectStats(res, stats);
+      layers.push({color:hexc(Q2.pal[j]), d:d, anchors:anchors});
+      palette.push({hex:hexc(Q2.pal[j]), area:Q2.area[j]});
+    }
+  } else {
+    var d2=srcFor(msg.despeckle), bm2=new Bitmap(w,h);
+    var th=params.threshold, inv=params.invert;
+    if(msg.autoThreshold){
+      var okey=msg.despeckle?1:0;
+      if(OTSU[okey]===undefined) OTSU[okey]=otsu(d2);
+      th=OTSU[okey];
+    }
+    usedThreshold=th;
+    for(var i2=0,p2=0;i2<d2.length;i2+=4,p2++){
+      var a2=d2[i2+3]/255;
+      var lum=0.299*d2[i2]+0.587*d2[i2+1]+0.114*d2[i2+2];
+      var eff=lum*a2+255*(1-a2);
+      var filled= eff<th; if(inv) filled=!filled;
+      bm2.data[p2]=filled?1:0;
+    }
+    var res2=trace(bm2, params);
+    var dd=pathToD(res2);
+    var anchors2=[];
+    collectAnchors(res2, anchors2);
+    collectStats(res2, stats);
+    layers.push({color:msg.fill, d:dd, anchors:anchors2});
+  }
+  return {type:"result", job:msg.job, w:w, h:h, layers:layers, palette:palette, stats:stats, usedThreshold:usedThreshold};
+}
+
+function onMsg(msg){
+  if(msg.type==="image"){
+    IMG={d:new Uint8ClampedArray(msg.buf), w:msg.w, h:msg.h};
+    FIMG=null; QCACHE={}; OTSU={};
+    return {type:"ready"};
+  }
+  if(msg.type==="trace"){
+    if(!IMG) return {type:"error", job:msg.job, message:"kein Bild"};
+    try { return handleTrace(msg); }
+    catch(e){ return {type:"error", job:msg.job, message:String(e && e.message || e)}; }
+  }
+}
+
+if (typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope) {
+  self.onmessage = function(ev){ var r = onMsg(ev.data); if(r) self.postMessage(r); };
+}
+
+</script>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const state = {
+    img:null, srcW:0, srcH:0, view:"vector", svgString:"",
+    params:{ threshold:128, invert:false, turdsize:2, alphamax:1.0,
+             optcurve:true, opttolerance:0.2, turnpolicy:"minority" },
+    fill:"#0E141B", bg:"#ffffff", anchors:true,
+    colorMode:true, paletteSize:6, layers:[], palette:[], stats:null,
+    despeckle:false, autoThreshold:true
+  };
+  const MAXSIDE = 900;
+
+  // ---- Bildaufnahme ----
+  function setImage(img){
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    let scale = 1;
+    if (Math.max(w,h) > MAXSIDE) scale = MAXSIDE / Math.max(w,h);
+    state.srcW = Math.max(1, Math.round(w*scale));
+    state.srcH = Math.max(1, Math.round(h*scale));
+    const c = document.createElement("canvas");
+    c.width = state.srcW; c.height = state.srcH;
+    const cx = c.getContext("2d");
+    cx.drawImage(img, 0,0, state.srcW, state.srcH);
+    state.imgData = cx.getImageData(0,0,state.srcW,state.srcH);
+    $("dimBadge").textContent = state.srcW+"×"+state.srcH + (scale<1?" (skaliert)":"");
+    $("emptyMsg").style.display="none";
+    $("frame").style.display="";
+    resendImage();
+    scheduleTrace();
+  }
+  function loadFile(file){
+    if(!file || !file.type.startsWith("image/")) return;
+    const r = new FileReader();
+    r.onload = e => { const im = new Image(); im.onload = ()=>setImage(im); im.src = e.target.result; };
+    r.readAsDataURL(file);
+  }
+  function loadSample(){
+    const c = document.createElement("canvas"); c.width=440; c.height=300;
+    const x = c.getContext("2d");
+    x.fillStyle="#F4EFE6"; x.fillRect(0,0,440,300); // warmer heller Hintergrund
+    // farbige, flächige Formen (idealer Farb-Trace-Fall)
+    x.fillStyle="#2E86AB"; x.beginPath(); x.arc(150,150,95,0,Math.PI*2); x.fill();        // blau
+    x.fillStyle="#E8A04C"; x.beginPath(); x.arc(150,150,48,0,Math.PI*2); x.fill();         // amber (Loch-Effekt)
+    x.fillStyle="#C0392B"; x.beginPath(); x.moveTo(300,60); x.lineTo(410,60); x.lineTo(355,170); x.closePath(); x.fill(); // rot
+    x.fillStyle="#27AE60"; x.fillRect(285,185,130,80);                                     // grün
+    x.fillStyle="#1B2A33";                                                                  // dunkles &
+    x.font="700 150px Georgia, 'Times New Roman', serif";
+    x.textAlign="center"; x.textBaseline="middle";
+    x.fillText("&", 355, 120);
+    const im = new Image(); im.onload=()=>setImage(im); im.src = c.toDataURL();
+  }
+
+  // ---- Worker: gesamtes Tracing off-thread ----
+  // Worker-Quelltext = Potrace-Kern + Glue (beide als Script-Tags im Dokument)
+  var worker=null, workerFailed=false, syncOnMsg=null;
+  function makeWorker(){
+    try{
+      var src = document.getElementById("potraceCore").textContent + "\n" +
+                document.getElementById("workerGlue").textContent;
+      var blob = new Blob([src], {type:"application/javascript"});
+      var url = URL.createObjectURL(blob);
+      var w = new Worker(url);
+      URL.revokeObjectURL(url);
+      w.onmessage = function(ev){ onWorkerMsg(ev.data); };
+      w.onerror = function(e){ console.warn("Worker-Fehler, Fallback auf Main-Thread:", e.message); workerFailed=true; worker=null; initSyncFallback(); resendImage(); scheduleTrace(); };
+      return w;
+    }catch(e){ console.warn("Worker nicht verfügbar, Fallback auf Main-Thread:", e); workerFailed=true; initSyncFallback(); return null; }
+  }
+  function initSyncFallback(){
+    if(syncOnMsg) return;
+    var src = document.getElementById("workerGlue").textContent
+      .replace(/if \(typeof WorkerGlobalScope[\s\S]*$/, "return onMsg;");
+    // Kern ist auf dem Main-Thread bereits geladen (Bitmap/trace global) -> nur Glue evaluieren
+    syncOnMsg = new Function(src)();
+  }
+  function workerSend(msg, transfer){
+    if(worker){ worker.postMessage(msg, transfer||[]); }
+    else { // synchron im nächsten Tick, damit der Busy-Spinner rendert
+      setTimeout(function(){ var r=syncOnMsg(msg); if(r) onWorkerMsg(r); }, 16);
+    }
+  }
+  function resendImage(){
+    if(!state.imgData) return;
+    var copy = new Uint8ClampedArray(state.imgData.data); // Kopie: Canvas braucht das Original
+    workerSend({type:"image", buf:copy.buffer, w:state.srcW, h:state.srcH}, [copy.buffer]);
+  }
+  worker = makeWorker();
+
+  // ---- Tracen (asynchron, debounced, superseding) ----
+  var traceTimer=null, jobSeq=0, latestJob=0;
+  function scheduleTrace(){
+    clearTimeout(traceTimer);
+    traceTimer = setTimeout(runTrace, 110);
+  }
+  function runTrace(){
+    if(!state.imgData) return;
+    latestJob = ++jobSeq;
+    $("busy").classList.add("show");
+    workerSend({type:"trace", job:latestJob, colorMode:state.colorMode,
+                paletteSize:state.paletteSize, params:state.params, fill:state.fill,
+                despeckle:state.despeckle, autoThreshold:state.autoThreshold});
+  }
+  function onWorkerMsg(msg){
+    if(msg.type==="ready") return;
+    if(msg.type==="error"){
+      if(msg.job===latestJob){ $("busy").classList.remove("show");
+        $("svgCode").textContent="Fehler beim Tracing: "+msg.message; }
+      return;
+    }
+    if(msg.type!=="result" || msg.job!==latestJob) return; // veraltete Antwort verwerfen
+    $("busy").classList.remove("show");
+    state.layers = msg.layers;
+    state.stats = msg.stats;
+    if(msg.usedThreshold!=null && state.autoThreshold){
+      $("thVal").textContent = msg.usedThreshold+" (auto)";
+      $("threshold").value = msg.usedThreshold;
+    }
+    if(state.colorMode){ state.palette = msg.palette; renderPaletteStrip(); }
+    state.svgString = buildSVG();
+    renderAll();
+  }
+
+  // ---- SVG bauen (gestapelte Ebenen) ----
+  function buildSVG(){
+    const w=state.srcW, h=state.srcH;
+    let paths="";
+    const seam = state.colorMode && state.layers.length>1
+      ? '" stroke-width="0.5" stroke-linejoin="round' : '';
+    for(const L of state.layers)
+      paths += '<path d="'+L.d+'" fill="'+L.color+'"'+(seam?' stroke="'+L.color+seam+'"':'')+' fill-rule="evenodd"/>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+
+      '" width="'+w+'" height="'+h+'">'+paths+'</svg>';
+  }
+  function renderPaletteStrip(){
+    const el=$("paletteStrip"); if(!el) return;
+    el.innerHTML = state.palette.map(c=>
+      '<div class="chip" style="background:'+c.hex+'" title="'+c.hex+'"></div>').join('');
+  }
+
+  // ---- Rendern ----
+  function renderAll(){
+    renderOriginal();
+    renderVector();
+    applyView();
+    renderStats();
+    $("svgCode").textContent = state.svgString;
+  }
+  function renderOriginal(){
+    const c = $("origCanvas");
+    c.width = state.srcW; c.height = state.srcH;
+    const x = c.getContext("2d");
+    x.putImageData(state.imgData,0,0);
+  }
+  function renderVector(){
+    if(!state.layers.length) return;
+    const w=state.srcW, h=state.srcH, svg=$("vecSvg");
+    svg.setAttribute("viewBox","0 0 "+w+" "+h);
+    svg.setAttribute("width", w); svg.setAttribute("height", h);
+    const ov = state.view==="overlay", acc=cssVar('--accent');
+    let inner = ov ? '' : '<rect x="0" y="0" width="'+w+'" height="'+h+'" fill="'+state.bg+'"/>';
+    for(const L of state.layers){
+      if(ov) inner += '<path d="'+L.d+'" fill="'+L.color+'" fill-opacity="0.18" stroke="'+acc+'" stroke-width="0.8"/>';
+      else   inner += '<path d="'+L.d+'" fill="'+L.color+'"'+(state.colorMode&&state.layers.length>1?' stroke="'+L.color+'" stroke-width="0.5" stroke-linejoin="round"':'')+' fill-rule="evenodd"/>';
+    }
+    if(ov && state.anchors) inner += anchorMarks();
+    svg.innerHTML = inner;
+  }
+  function anchorMarks(){
+    let s=""; const col=cssVar('--accent');
+    for(const L of state.layers){
+      const a=L.anchors||[];
+      for(let i=0;i<a.length;i+=2)
+        s += '<circle cx="'+fmt(a[i])+'" cy="'+fmt(a[i+1])+'" r="1.6" fill="'+col+'"/>';
+    }
+    return s;
+  }
+  function applyView(){
+    const c=$("origCanvas"), s=$("vecSvg");
+    c.style.display="block"; // bleibt immer im Fluss = Größengeber des Frames
+    if(state.view==="orig"){ c.style.opacity="1"; s.style.display="none"; }
+    else if(state.view==="vector"){ c.style.opacity="0"; s.style.display="block"; }
+    else { c.style.opacity="0.35"; s.style.display="block"; }
+  }
+  function renderStats(){
+    const st=state.stats; if(!st) return;
+    $("sPaths").innerHTML = st.paths + (state.colorMode? ' <small>· '+state.layers.length+' Ebenen</small>':'');
+    $("sSeg").textContent = st.seg;
+    $("sCL").innerHTML = st.curves+' <small>/</small> '+st.lines;
+    const bytes = new Blob([state.svgString]).size;
+    $("sSize").innerHTML = (bytes<1024? bytes+' <small>B</small>' : (bytes/1024).toFixed(1)+' <small>KB</small>');
+  }
+  function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+  // ---- Controls ----
+  // Schwellwert
+  $("threshold").oninput = e=>{ state.params.threshold=+e.target.value; $("thVal").textContent=e.target.value; scheduleTrace(); };
+  $("turdsize").oninput = e=>{ state.params.turdsize=+e.target.value; $("turdVal").textContent=e.target.value; scheduleTrace(); };
+  $("alphamax").oninput = e=>{ const v=+e.target.value/100; state.params.alphamax=v; $("alphaVal").textContent=v.toFixed(2); scheduleTrace(); };
+  $("opttolerance").oninput = e=>{ const v=+e.target.value/100; state.params.opttolerance=v; $("tolVal").textContent=v.toFixed(2); scheduleTrace(); };
+  $("turnpolicy").onchange = e=>{ state.params.turnpolicy=e.target.value; scheduleTrace(); };
+
+  function toggle(id, fn){
+    const el=$(id);
+    el.onclick=()=>{ el.classList.toggle("on"); fn(el.classList.contains("on")); };
+  }
+  toggle("invertTgl", on=>{ state.params.invert=on; scheduleTrace(); });
+  toggle("optTgl", on=>{ state.params.optcurve=on; scheduleTrace(); });
+  toggle("anchorTgl", on=>{ state.anchors=on; if(state.view==="overlay") renderVector(); });
+
+  // Farbmodus
+  function syncColorUI(){
+    const on = state.colorMode;
+    $("paletteCtrl").style.display = on ? "" : "none";
+    $("threshCard").classList.toggle("dimmed", on);   // Schwellwert irrelevant im Farbmodus
+    $("fillSwatch").classList.toggle("dimmed", on);    // einzelne Füllfarbe nur monochrom
+  }
+  toggle("colorTgl", on=>{ state.colorMode=on; syncColorUI(); scheduleTrace(); });
+  toggle("despeckleTgl", on=>{ state.despeckle=on; scheduleTrace(); });
+  toggle("autoThTgl", on=>{ state.autoThreshold=on;
+    $("thCtrl").classList.toggle("dimmed", on);
+    if(!on) $("thVal").textContent = $("threshold").value;
+    scheduleTrace(); });
+  $("paletteSize").oninput = e=>{ state.paletteSize=+e.target.value; $("palVal").textContent=e.target.value; scheduleTrace(); };
+
+  $("fillColor").oninput = e=>{ state.fill=e.target.value;
+    if(!state.colorMode && state.layers.length){ state.layers[0].color=state.fill;
+      state.svgString=buildSVG(); renderVector(); $("svgCode").textContent=state.svgString; } };
+  $("bgColor").oninput = e=>{ state.bg=e.target.value; renderVector(); };
+
+  // Alle Parameter auf Standard zurücksetzen
+  function setTgl(id,on){ $(id).classList.toggle("on", on); }
+  function resetAll(){
+    state.params={ threshold:128, invert:false, turdsize:2, alphamax:1.0,
+                   optcurve:true, opttolerance:0.2, turnpolicy:"minority" };
+    state.fill="#0E141B"; state.bg="#ffffff"; state.anchors=true;
+    state.colorMode=true; state.paletteSize=6;
+    state.despeckle=false; state.autoThreshold=true;
+    // Slider + Labels
+    $("threshold").value=128;     $("thVal").textContent="128";
+    $("turdsize").value=2;        $("turdVal").textContent="2";
+    $("alphamax").value=100;      $("alphaVal").textContent="1.00";
+    $("opttolerance").value=20;   $("tolVal").textContent="0.20";
+    $("paletteSize").value=6;     $("palVal").textContent="6";
+    $("turnpolicy").value="minority";
+    // Schalter
+    setTgl("invertTgl",false); setTgl("optTgl",true);
+    setTgl("anchorTgl",true);  setTgl("colorTgl",true);
+    setTgl("despeckleTgl",false); setTgl("autoThTgl",true);
+    $("thCtrl").classList.add("dimmed");
+    // Farben
+    $("fillColor").value="#0E141B"; $("bgColor").value="#ffffff";
+    syncColorUI();
+    scheduleTrace();
+    flash($("resetBtn"),"↺  Zurückgesetzt");
+  }
+  $("resetBtn").onclick=resetAll;
+
+  // view segments
+  $("seg").querySelectorAll("button").forEach(b=>{
+    b.onclick=()=>{ $("seg").querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active"); state.view=b.dataset.view; renderVector(); applyView(); };
+  });
+
+  // upload
+  $("pickBtn").onclick=()=>$("file").click();
+  $("drop").onclick=()=>$("file").click();
+  $("file").onchange=e=>loadFile(e.target.files[0]);
+  $("sampleBtn").onclick=loadSample;
+  const drop=$("drop");
+  ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+  drop.addEventListener("drop",e=>{ if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+  // ganzes Fenster als Dropzone
+  ["dragover","drop"].forEach(ev=>window.addEventListener(ev,e=>e.preventDefault()));
+  window.addEventListener("drop",e=>{ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f)loadFile(f); });
+
+  // download / copy
+  $("dlBtn").onclick=()=>{
+    if(!state.svgString)return;
+    const blob=new Blob([state.svgString],{type:"image/svg+xml"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+    a.download="vektorisiert.svg"; a.click(); URL.revokeObjectURL(a.href);
+  };
+  $("copyBtn").onclick=async()=>{
+    if(!state.svgString)return;
+    try{ await navigator.clipboard.writeText(state.svgString); flash($("copyBtn"),"Kopiert ✓"); }
+    catch{ flash($("copyBtn"),"Strg+C im Code"); }
+  };
+  function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeout(()=>btn.textContent=o,1300); }
+
+  // Start mit Beispiel
+  syncColorUI();
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(loadSample); }
+  else { setTimeout(loadSample, 50); }
+})();
+</script>

@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    name: biome + tsc + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Lint & Format (biome)
+        run: bun run check
+
+      - name: Typecheck (tsc strict, 3 Projekte)
+        run: bun run typecheck
+
+      - name: Tests (bun test)
+        run: bun test
+
+      - name: Build (vite + PWA)
+        run: bun run build

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>vektor</title>
+  <rect width="512" height="512" rx="96" fill="#0f1115"/>
+  <path d="M120 140 L256 400 L392 140 L328 140 L256 286 L184 140 Z" fill="#f59e0b"/>
+  <circle cx="256" cy="140" r="26" fill="#fbbf24"/>
+  <circle cx="120" cy="140" r="18" fill="#e6e9ef"/>
+  <circle cx="392" cy="140" r="18" fill="#e6e9ef"/>
+  <circle cx="256" cy="400" r="18" fill="#e6e9ef"/>
+</svg>

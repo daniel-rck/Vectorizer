@@ -1,0 +1,11 @@
+// Cloudflare Workers: statisches Hosting des Vite-Builds (kein Backend).
+// Deploy: bun run deploy (erfordert `wrangler login` bzw. CLOUDFLARE_API_TOKEN)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vektor",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
