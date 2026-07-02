@@ -22,6 +22,19 @@ bun run build      # Typecheck + Production-Build
 `src/lib/potrace/**` und `src/worker/trace.worker.ts` sind DOM-frei und
 kompilieren gegen `ES2022 + WebWorker` (siehe `tsconfig.core.json`).
 
+## Deployment
+
+Statisches Hosting auf Cloudflare Workers (`wrangler.jsonc`, Assets-only,
+SPA-Fallback):
+
+```sh
+bunx wrangler login   # einmalig, oder CLOUDFLARE_API_TOKEN setzen
+bun run deploy        # Build + wrangler deploy
+```
+
+CI (`.github/workflows/ci.yml`) führt auf Push/PR dieselben Gates aus wie
+lokal: biome, tsc (3 Projekte), bun test, Build.
+
 > Hinweis: Das `web-base`-Scaffold war aus der Build-Umgebung nicht erreichbar
 > (Repo-Zugriff auf `vectorizer` beschränkt); das Setup repliziert den
 > web-base-Standard manuell: Bun, Biome, React 19, Vite 8, TS strict, Tailwind 4.

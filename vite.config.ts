@@ -15,6 +15,10 @@ export default defineConfig({
       filename: "sw.ts",
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
+      injectManifest: {
+        // Fonts und Icons mit precachen (Default wäre nur js/css/html)
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+      },
       manifest: {
         name: "vektor — Raster zu SVG",
         short_name: "vektor",
