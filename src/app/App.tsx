@@ -39,6 +39,8 @@ export function App() {
   const [lockedPalette, setLockedPalette] = useState<string[] | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sheetButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetCloseRef = useRef<HTMLButtonElement>(null);
   const versionRef = useRef(0);
 
   const applyImageData = useCallback(
@@ -151,14 +153,14 @@ export function App() {
   }, [image, settings, display]);
 
   // Ganzes Fenster als Dropzone (mit Overlay während des Ziehens)
+  const dragDepth = useRef(0);
   useEffect(() => {
-    let depth = 0;
     const hasFiles = (e: DragEvent): boolean =>
       e.dataTransfer?.types.includes("Files") ?? false;
     const onEnter = (e: DragEvent): void => {
       if (!hasFiles(e)) return;
       e.preventDefault();
-      depth++;
+      dragDepth.current++;
       setDragging(true);
     };
     const onOver = (e: DragEvent): void => {
@@ -166,12 +168,12 @@ export function App() {
     };
     const onLeave = (e: DragEvent): void => {
       if (!hasFiles(e)) return;
-      depth = Math.max(0, depth - 1);
-      if (depth === 0) setDragging(false);
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setDragging(false);
     };
     const onDrop = (e: DragEvent): void => {
       e.preventDefault();
-      depth = 0;
+      dragDepth.current = 0;
       setDragging(false);
       const file = e.dataTransfer?.files[0];
       if (file) void loadBlob(file);
@@ -197,9 +199,8 @@ export function App() {
         target.closest("input, textarea, [contenteditable]")
       )
         return;
-      const item = [...(e.clipboardData?.items ?? [])].find(
-        (i) => i.kind === "file" && i.type.startsWith("image/"),
-      );
+      // Jede Datei an loadBlob geben — dessen Typprüfung meldet Nicht-Bilder
+      const item = [...(e.clipboardData?.items ?? [])].find((i) => i.kind === "file");
       const file = item?.getAsFile();
       if (!file) return;
       e.preventDefault();
@@ -221,9 +222,13 @@ export function App() {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
+    // Fokus ins Sheet, beim Schließen zurück auf den Auslöser
+    sheetCloseRef.current?.focus();
+    const opener = sheetButtonRef.current;
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
+      opener?.focus();
     };
   }, [sheetOpen]);
 
@@ -338,26 +343,48 @@ export function App() {
                   </span>
                 ) : null}
               </div>
-              {worker.error || loadError ? (
+              {worker.error ? (
+                <div
+                  role="alert"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-[12px] text-red-300"
+                >
+                  <span>Fehler beim Tracen: {worker.error}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => worker.trace(settings, lockedPalette ?? undefined)}
+                      className="rounded border border-red-400/50 px-2 py-0.5 text-red-200 hover:border-red-300"
+                    >
+                      Erneut versuchen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={worker.clearError}
+                      aria-label="Fehlermeldung schließen"
+                      className="text-red-300 hover:text-red-100"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                </div>
+              ) : null}
+              {loadError ? (
                 <div
                   role="alert"
                   className="flex items-start justify-between gap-2 rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-[12px] text-red-300"
                 >
-                  <span>
-                    {worker.error ? `Fehler beim Tracen: ${worker.error}` : loadError}
-                  </span>
-                  {loadError && !worker.error ? (
-                    <button
-                      type="button"
-                      onClick={() => setLoadError(null)}
-                      aria-label="Meldung schließen"
-                      className="shrink-0 text-red-300 hover:text-red-100"
-                    >
-                      ✕
-                    </button>
-                  ) : null}
+                  <span>{loadError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setLoadError(null)}
+                    aria-label="Meldung schließen"
+                    className="shrink-0 text-red-300 hover:text-red-100"
+                  >
+                    ✕
+                  </button>
                 </div>
-              ) : emptyResult ? (
+              ) : null}
+              {!worker.error && emptyResult ? (
                 <p
                   role="status"
                   className="rounded border border-accent-500/40 bg-accent-500/10 px-3 py-2 text-[12px] text-accent-400"
@@ -421,6 +448,7 @@ export function App() {
             {/* Bottom-Sheet (nur mobil) */}
             <div className="lg:hidden">
               <button
+                ref={sheetButtonRef}
                 type="button"
                 onClick={() => setSheetOpen(true)}
                 className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 rounded-lg border border-ink-600 bg-ink-900/95 px-4 py-2.5 text-center text-[13px] font-medium shadow-lg backdrop-blur"
@@ -444,6 +472,7 @@ export function App() {
                     <div className="mb-3 flex items-center justify-between">
                       <div className="mx-auto h-1 w-10 rounded-full bg-ink-600" />
                       <button
+                        ref={sheetCloseRef}
                         type="button"
                         onClick={() => setSheetOpen(false)}
                         className="absolute right-4 top-3 text-ink-300 hover:text-ink-100"

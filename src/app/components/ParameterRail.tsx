@@ -117,9 +117,10 @@ export function ParameterRail({
             />
             {palette.length ? (
               <div className="flex flex-wrap gap-1">
-                {palette.map((c) => (
+                {palette.map((c, i) => (
                   <span
-                    key={c.hex}
+                    // biome-ignore lint/suspicious/noArrayIndexKey: Palette ist positionsfest, Farben können doppelt sein
+                    key={`${c.hex}-${i}`}
                     title={c.hex}
                     className="h-5 w-5 rounded border border-ink-600"
                     style={{ backgroundColor: c.hex }}

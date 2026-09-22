@@ -24,6 +24,8 @@ export interface TraceWorkerApi {
   busy: boolean;
   /** Letztes Ergebnis verwerfen (z.B. bei neuem Bild). */
   clear: () => void;
+  /** Nur die Fehlermeldung ausblenden. */
+  clearError: () => void;
 }
 
 export function useTraceWorker(): TraceWorkerApi {
@@ -124,5 +126,7 @@ export function useTraceWorker(): TraceWorkerApi {
     setBusy(false);
   }, []);
 
-  return { sendImage, trace, result, error, busy, clear };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { sendImage, trace, result, error, busy, clear, clearError };
 }
