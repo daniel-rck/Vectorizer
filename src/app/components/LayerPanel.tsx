@@ -4,8 +4,25 @@
  * editieren (löst Re-Trace mit fester Palette aus, kein Median-Cut).
  */
 
-import type { PaletteEntry, TraceLayer } from "../../lib/potrace/protocol";
-import type { LayerOverride } from "../types";
+import type { PaletteEntry } from "../../lib/potrace/protocol";
+import type { DisplayLayer, LayerOverride } from "../types";
+
+function EyeIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      {open ? null : <path d="M3 3l18 18" />}
+    </svg>
+  );
+}
 
 export function LayerPanel({
   layers,
@@ -19,12 +36,13 @@ export function LayerPanel({
   onLockedColor,
 }: {
   /** Ebenen des letzten Results (größte zuerst), nur nicht-leere. */
-  layers: readonly TraceLayer[];
+  layers: readonly DisplayLayer[];
   /** Palette in Ebenen-Reihenfolge (Farbmodus). */
   palette: readonly PaletteEntry[];
   overrides: Record<string, LayerOverride>;
   lockedPalette: string[] | null;
-  onOverride: (originalColor: string, patch: LayerOverride) => void;
+  /** Schlüssel: Ebenen-id (Originalfarbe, bei Duplikaten eindeutig gemacht). */
+  onOverride: (id: string, patch: LayerOverride) => void;
   /** Größte Ebene ein-/ausblenden (Ein-Klick "Hintergrund weglassen"). */
   onOmitBackground: () => void;
   onLock: () => void;
@@ -33,7 +51,7 @@ export function LayerPanel({
 }) {
   if (!layers.length) return null;
   const totalArea = palette.reduce((a, p) => a + p.area, 0) || 1;
-  const backgroundHidden = overrides[layers[0].color]?.hidden === true;
+  const backgroundHidden = overrides[layers[0].id]?.hidden === true;
 
   return (
     <section className="rounded-lg border border-ink-700 bg-ink-900 p-4">
@@ -64,7 +82,7 @@ export function LayerPanel({
                 : "border-ink-600 hover:border-accent-500"
             }`}
           >
-            {lockedPalette ? "📌 Palette gepinnt — lösen" : "Palette pinnen"}
+            {lockedPalette ? "Palette gepinnt · lösen" : "Palette pinnen"}
           </button>
         </div>
       </div>
@@ -92,13 +110,13 @@ export function LayerPanel({
 
       <ul className="space-y-1.5">
         {layers.map((layer, i) => {
-          const ov = overrides[layer.color] ?? {};
+          const ov = overrides[layer.id] ?? {};
           const shown = ov.hidden !== true;
           const displayColor = ov.color ?? layer.color;
           const pct = palette[i] ? (palette[i].area / totalArea) * 100 : null;
           return (
             <li
-              key={layer.color}
+              key={layer.id}
               className={`flex items-center gap-2 rounded border border-ink-700 px-2 py-1.5 ${
                 shown ? "" : "opacity-45"
               }`}
@@ -106,7 +124,7 @@ export function LayerPanel({
               <input
                 type="color"
                 value={displayColor}
-                onChange={(e) => onOverride(layer.color, { color: e.target.value })}
+                onChange={(e) => onOverride(layer.id, { color: e.target.value })}
                 title="Ebenenfarbe ändern (nur Darstellung/Export, kein Re-Trace)"
                 className="h-6 w-6 shrink-0 cursor-pointer rounded border border-ink-600 bg-transparent"
               />
@@ -114,8 +132,9 @@ export function LayerPanel({
               {ov.color && ov.color !== layer.color ? (
                 <button
                   type="button"
-                  onClick={() => onOverride(layer.color, { color: undefined })}
+                  onClick={() => onOverride(layer.id, { color: undefined })}
                   title={`Zurück zu ${layer.color}`}
+                  aria-label={`Farbe auf ${layer.color} zurücksetzen`}
                   className="font-mono text-[10px] text-ink-300 hover:text-ink-100"
                 >
                   ↺
@@ -128,11 +147,12 @@ export function LayerPanel({
                 type="button"
                 role="switch"
                 aria-checked={shown}
-                onClick={() => onOverride(layer.color, { hidden: shown })}
+                onClick={() => onOverride(layer.id, { hidden: shown })}
                 title={shown ? "Ebene ausblenden" : "Ebene einblenden"}
-                className="text-[13px]"
+                aria-label={`Ebene ${displayColor} ${shown ? "ausblenden" : "einblenden"}`}
+                className={`rounded p-1 hover:bg-ink-700 ${shown ? "text-ink-100" : "text-ink-300"}`}
               >
-                {shown ? "👁" : "🚫"}
+                <EyeIcon open={shown} />
               </button>
             </li>
           );

@@ -8,6 +8,8 @@
     "tests/**/*.ts",
     "src/lib/**/*.ts",
     "src/worker/**/*.ts",
-    "src/app/lib/svg.ts"
+    "src/app/lib/svg.ts",
+    "src/app/lib/settings.ts",
+    "src/app/types.ts"
   ]
 }
