@@ -2,7 +2,7 @@
 // Deploy: bun run deploy (erfordert `wrangler login` bzw. CLOUDFLARE_API_TOKEN)
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "vektor",
+  "name": "vectorizer",
   "compatibility_date": "2026-07-01",
   "assets": {
     "directory": "./dist",
