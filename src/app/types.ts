@@ -54,6 +54,8 @@ export interface DisplayLayer extends TraceLayer {
 
 export interface SourceImage {
   data: ImageData;
+  /** Dateiname der Quelle (für den Export-Namen). */
+  name: string;
   /** true, wenn auf ≤1600px längste Kante herunterskaliert wurde. */
   scaled: boolean;
   /** Monoton steigende Nummer, damit Effekte neue Bilder erkennen. */

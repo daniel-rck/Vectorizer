@@ -37,7 +37,8 @@ export function ViewTabs({
           key={v.key}
           type="button"
           onClick={() => onView(v.key)}
-          className={`rounded px-3 py-1 text-[12px] transition-colors ${
+          aria-pressed={view === v.key}
+          className={`rounded px-2 py-1 text-[12px] transition-colors sm:px-3 ${
             view === v.key
               ? "bg-ink-700 text-accent-400"
               : "text-ink-300 hover:text-ink-100"
@@ -69,6 +70,8 @@ export function Viewer({
   display,
   seam,
   busy,
+  onPickFile,
+  onLoadSample,
 }: {
   image: SourceImage | null;
   /** Sichtbare Ebenen (nach Overrides), größte zuerst. */
@@ -79,6 +82,8 @@ export function Viewer({
   /** Naht-Behandlung (Farbmodus, mehrere Ebenen): stroke = fill. */
   seam: boolean;
   busy: boolean;
+  onPickFile: () => void;
+  onLoadSample: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const compareCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -87,6 +92,7 @@ export function Viewer({
   const [split, setSplit] = useState(0.5);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchDist = useRef<number | null>(null);
+  const [panning, setPanning] = useState(false);
 
   const view = display.view;
   const compare = view === "compare";
@@ -132,8 +138,25 @@ export function Viewer({
     return () => el.removeEventListener("wheel", onWheel);
   }, [hasImage]);
 
+  // Zoom-Leiste: um die Mitte des Viewers zoomen
+  const zoomBy = useCallback((factor: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const cx = el.clientWidth / 2;
+    const cy = el.clientHeight / 2;
+    setTf((t) => {
+      const scale = clampScale(t.scale * factor);
+      const r = scale / t.scale;
+      return { scale, x: cx - r * (cx - t.x), y: cy - r * (cy - t.y) };
+    });
+  }, []);
+
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    // Pan nur mit Primärtaste bzw. Touch/Stift; Klicks auf Bedienelemente durchlassen
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("button")) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    setPanning(true);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
@@ -171,6 +194,7 @@ export function Viewer({
   const onPointerEnd = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinchDist.current = null;
+    if (pointers.current.size === 0) setPanning(false);
   }, []);
 
   // Griff des Vergleichs-Splits ziehen (kein Pan dabei)
@@ -197,8 +221,35 @@ export function Viewer({
 
   if (!image) {
     return (
-      <div className="flex min-h-64 items-center justify-center rounded-lg border border-ink-700 bg-ink-900 p-8 text-center text-[13px] text-ink-300">
-        Kein Bild geladen — „Beispiel laden" oder eigenes Bild ins Fenster ziehen.
+      <div className="flex min-h-64 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-ink-600 bg-ink-900 p-8 text-center text-[13px] text-ink-300">
+        <div>
+          <strong className="block text-[15px] text-ink-100">
+            Noch kein Bild geladen
+          </strong>
+          <span>
+            <span className="hidden sm:inline">Ins Fenster ziehen, </span>mit Strg/⌘+V
+            einfügen oder auswählen.
+          </span>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={onPickFile}
+            className="rounded bg-accent-500 px-4 py-2 text-[13px] font-medium text-ink-950 hover:bg-accent-400"
+          >
+            Bild wählen
+          </button>
+          <button
+            type="button"
+            onClick={onLoadSample}
+            className="rounded border border-ink-600 px-4 py-2 text-[13px] text-ink-100 hover:border-accent-500"
+          >
+            Beispiel laden
+          </button>
+        </div>
+        <span className="font-mono text-[11px]">
+          PNG · JPG · WEBP — bleibt auf deinem Gerät
+        </span>
       </div>
     );
   }
@@ -240,9 +291,12 @@ export function Viewer({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
       onPointerCancel={onPointerEnd}
-      onDoubleClick={() => setTf(FIT)}
+      onDoubleClick={(e) => {
+        // schnelles Klicken auf die Zoom-Buttons soll nicht einpassen
+        if (!(e.target as HTMLElement).closest("button")) setTf(FIT);
+      }}
       className="relative flex touch-none select-none items-start justify-center overflow-hidden rounded-lg border border-ink-700 bg-ink-800 p-3 [background-image:repeating-conic-gradient(#1b1f27_0%_25%,#20242e_0%_50%)] [background-size:16px_16px]"
-      style={{ cursor: "grab" }}
+      style={{ cursor: panning ? "grabbing" : "grab" }}
       title="Ziehen = verschieben · Rad/Pinch = zoomen · Doppelklick = einpassen"
     >
       <div className="relative max-w-full" style={{ transform, transformOrigin: "0 0" }}>
@@ -322,6 +376,37 @@ export function Viewer({
           </div>
         </>
       ) : null}
+
+      {/* Zoom-Leiste */}
+      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-0.5 rounded-md border border-ink-700 bg-ink-950/85 p-0.5 font-mono text-[11px] text-ink-100 backdrop-blur">
+        <button
+          type="button"
+          onClick={() => zoomBy(1 / 1.5)}
+          aria-label="Verkleinern"
+          className="h-7 w-7 rounded hover:bg-ink-700"
+        >
+          −
+        </button>
+        <span className="w-12 text-center tabular-nums" aria-live="polite">
+          {Math.round(tf.scale * 100)} %
+        </span>
+        <button
+          type="button"
+          onClick={() => zoomBy(1.5)}
+          aria-label="Vergrößern"
+          className="h-7 w-7 rounded hover:bg-ink-700"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          onClick={() => setTf(FIT)}
+          title="Einpassen (Doppelklick)"
+          className="h-7 rounded px-2 hover:bg-ink-700"
+        >
+          Fit
+        </button>
+      </div>
 
       {busy ? (
         <div className="absolute right-3 top-3 rounded bg-ink-950/80 px-2 py-1 font-mono text-[10px] tracking-widest text-accent-400">

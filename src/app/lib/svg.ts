@@ -36,3 +36,12 @@ export function svgByteSize(svg: string): number {
 export function formatBytes(n: number): string {
   return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`;
 }
+
+/** Download-Dateiname aus dem Quellnamen: "logo.png" -> "logo.svg". */
+export function svgFileName(sourceName: string): string {
+  const base = sourceName
+    .replace(/\.[^./\\]*$/, "")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .trim();
+  return `${base || "vektorisiert"}.svg`;
+}

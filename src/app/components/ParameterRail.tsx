@@ -76,7 +76,73 @@ export function ParameterRail({
         </div>
       </RailCard>
 
+      <RailCard title="Modus">
+        <div className="grid grid-cols-2 rounded-md border border-ink-700 bg-ink-950 p-0.5 text-[12px]">
+          {(
+            [
+              [true, "Farbig"],
+              [false, "Monochrom"],
+            ] as const
+          ).map(([color, label]) => (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={settings.colorMode === color}
+              onClick={() => onSettings({ colorMode: color })}
+              className={`rounded px-2 py-1.5 transition-colors ${
+                settings.colorMode === color
+                  ? "bg-ink-700 text-accent-400"
+                  : "text-ink-300 hover:text-ink-100"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {settings.colorMode ? (
+          <>
+            <Slider
+              label="Farben"
+              value={settings.paletteSize}
+              display={String(settings.paletteSize)}
+              min={2}
+              max={16}
+              onChange={(v) => onSettings({ paletteSize: v })}
+              hint={
+                paletteLocked
+                  ? "Palette ist gepinnt — Regler wirkt erst nach dem Lösen."
+                  : "Bild wird auf so viele Farben reduziert, je Farbe eine getracte Ebene."
+              }
+              dimmed={paletteLocked}
+            />
+            {palette.length ? (
+              <div className="flex flex-wrap gap-1">
+                {palette.map((c) => (
+                  <span
+                    key={c.hex}
+                    title={c.hex}
+                    className="h-5 w-5 rounded border border-ink-600"
+                    style={{ backgroundColor: c.hex }}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <ColorSwatch
+            label="Füllfarbe"
+            value={settings.fill}
+            onChange={(v) => onSettings({ fill: v })}
+          />
+        )}
+      </RailCard>
+
       <RailCard title="Schwellwert" dimmed={settings.colorMode}>
+        {settings.colorMode ? (
+          <p className="text-[11px] leading-snug text-ink-300">
+            Nur im Monochrom-Modus wirksam.
+          </p>
+        ) : null}
         <Toggle
           label="Automatisch (Otsu)"
           checked={settings.autoThreshold}
@@ -151,54 +217,11 @@ export function ParameterRail({
       </RailCard>
 
       <RailCard title="Darstellung">
-        <Toggle
-          label="Farbig (mehrere Ebenen)"
-          checked={settings.colorMode}
-          onChange={(on) => onSettings({ colorMode: on })}
+        <ColorSwatch
+          label="Hintergrund (nur Anzeige)"
+          value={display.bg}
+          onChange={(v) => onDisplay({ bg: v })}
         />
-        {settings.colorMode ? (
-          <>
-            <Slider
-              label="Farben"
-              value={settings.paletteSize}
-              display={String(settings.paletteSize)}
-              min={2}
-              max={16}
-              onChange={(v) => onSettings({ paletteSize: v })}
-              hint={
-                paletteLocked
-                  ? "Palette ist gepinnt — Regler wirkt erst nach dem Lösen."
-                  : "Bild wird auf so viele Farben reduziert, je Farbe eine getracte Ebene."
-              }
-              dimmed={paletteLocked}
-            />
-            {palette.length ? (
-              <div className="flex flex-wrap gap-1">
-                {palette.map((c) => (
-                  <span
-                    key={c.hex}
-                    title={c.hex}
-                    className="h-5 w-5 rounded border border-ink-600"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </>
-        ) : null}
-        <div className="flex gap-4">
-          <ColorSwatch
-            label="Füllung"
-            value={settings.fill}
-            onChange={(v) => onSettings({ fill: v })}
-            dimmed={settings.colorMode}
-          />
-          <ColorSwatch
-            label="Hintergrund"
-            value={display.bg}
-            onChange={(v) => onDisplay({ bg: v })}
-          />
-        </div>
         <Toggle
           label="Ankerpunkte im Overlay"
           checked={display.anchors}

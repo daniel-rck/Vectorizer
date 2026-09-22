@@ -29,15 +29,38 @@ export interface TraceWorkerApi {
 export function useTraceWorker(): TraceWorkerApi {
   const workerRef = useRef<Worker | null>(null);
   const jobRef = useRef(0);
+  /** Letztes Bild — ein neu erzeugter Worker (nach Absturz) bekommt es erneut. */
+  const imageRef = useRef<ImageData | null>(null);
   const [result, setResult] = useState<ResultMessage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const postImage = useCallback((worker: Worker, data: ImageData) => {
+    const copy = new Uint8ClampedArray(data.data);
+    worker.postMessage(
+      { type: "image", buf: copy.buffer, w: data.width, h: data.height },
+      [copy.buffer],
+    );
+  }, []);
 
   const ensureWorker = useCallback((): Worker => {
     if (workerRef.current) return workerRef.current;
     const worker = new Worker(new URL("../../worker/trace.worker.ts", import.meta.url), {
       type: "module",
     });
+    // Absturz (z.B. Speicher): Busy lösen, Worker verwerfen — der nächste
+    // Trace erzeugt einen frischen Worker und schickt das Bild erneut.
+    const fail = (message: string): void => {
+      worker.terminate();
+      if (workerRef.current === worker) workerRef.current = null;
+      setBusy(false);
+      setError(message);
+    };
+    worker.onerror = (ev) => {
+      ev.preventDefault();
+      fail(ev.message || "Trace-Worker abgestürzt");
+    };
+    worker.onmessageerror = () => fail("Worker-Nachricht unlesbar");
     worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
       const msg = ev.data;
       if (msg.type === "ready") return;
@@ -50,8 +73,9 @@ export function useTraceWorker(): TraceWorkerApi {
       }
     };
     workerRef.current = worker;
+    if (imageRef.current) postImage(worker, imageRef.current);
     return worker;
-  }, []);
+  }, [postImage]);
 
   useEffect(() => {
     return () => {
@@ -62,13 +86,13 @@ export function useTraceWorker(): TraceWorkerApi {
 
   const sendImage = useCallback(
     (data: ImageData) => {
-      const copy = new Uint8ClampedArray(data.data);
-      ensureWorker().postMessage(
-        { type: "image", buf: copy.buffer, w: data.width, h: data.height },
-        [copy.buffer],
-      );
+      const fresh = !workerRef.current;
+      imageRef.current = data;
+      const worker = ensureWorker();
+      // Frischer Worker hat das Bild bereits in ensureWorker bekommen
+      if (!fresh) postImage(worker, data);
     },
-    [ensureWorker],
+    [ensureWorker, postImage],
   );
 
   const trace = useCallback(

@@ -8,8 +8,9 @@ import { Viewer, ViewTabs } from "./components/Viewer";
 import { decodeImage } from "./lib/image";
 import { makeSampleImage } from "./lib/sample";
 import { loadSession, saveSession } from "./lib/session";
+import { normalizeDisplay, normalizeSettings } from "./lib/settings";
 import { takeSharedImage } from "./lib/share";
-import { buildSvg, svgByteSize } from "./lib/svg";
+import { buildSvg, svgByteSize, svgFileName } from "./lib/svg";
 import {
   DEFAULT_DISPLAY,
   DEFAULT_SETTINGS,
@@ -36,24 +37,30 @@ export function App() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, LayerOverride>>({});
   const [lockedPalette, setLockedPalette] = useState<string[] | null>(null);
+  const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const versionRef = useRef(0);
 
   const applyImageData = useCallback(
-    (data: ImageData, scaled: boolean) => {
+    (data: ImageData, scaled: boolean, name: string) => {
       versionRef.current++;
       setLoadError(null);
       setOverrides({});
       setLockedPalette(null);
+      setSheetOpen(false);
       worker.clear();
       worker.sendImage(data);
-      setImage({ data, scaled, version: versionRef.current });
+      setImage({ data, scaled, name, version: versionRef.current });
     },
     [worker],
   );
 
   const loadBlob = useCallback(
-    async (blob: Blob) => {
+    async (blob: Blob, name = blob instanceof File ? blob.name : "bild") => {
+      if (blob.type && !blob.type.startsWith("image/")) {
+        setLoadError("Keine Bilddatei — unterstützt werden PNG, JPG und WEBP.");
+        return;
+      }
       if (blob.size > MAX_FILE_BYTES) {
         setLoadError(
           `Datei ist ${Math.round(blob.size / 1048576)} MB groß — maximal 64 MB.`,
@@ -62,7 +69,7 @@ export function App() {
       }
       try {
         const { data, scaled } = await decodeImage(blob);
-        applyImageData(data, scaled);
+        applyImageData(data, scaled, name);
       } catch {
         setLoadError("Datei konnte nicht als Bild gelesen werden.");
       }
@@ -70,8 +77,10 @@ export function App() {
     [applyImageData],
   );
 
+  const pickFile = useCallback(() => fileInputRef.current?.click(), []);
+
   const loadSample = useCallback(() => {
-    applyImageData(makeSampleImage(), false);
+    applyImageData(makeSampleImage(), false, "beispiel");
   }, [applyImageData]);
 
   // Parameteränderung / neues Bild -> debounced Trace (Job-Superseding im Hook)
@@ -116,10 +125,10 @@ export function App() {
       const saved = await loadSession();
       // Nur wiederherstellen, wenn nicht inzwischen etwas geladen wurde
       if (saved && versionRef.current === 0) {
-        setSettings(saved.settings);
-        setDisplay(saved.display);
+        setSettings(normalizeSettings(saved.settings));
+        setDisplay(normalizeDisplay(saved.display));
         const data = new ImageData(new Uint8ClampedArray(saved.buf), saved.w, saved.h);
-        applyImageData(data, saved.scaled);
+        applyImageData(data, saved.scaled, saved.name ?? "bild");
       }
     })();
   }, [loadBlob, applyImageData]);
@@ -133,6 +142,7 @@ export function App() {
         w: image.data.width,
         h: image.data.height,
         scaled: image.scaled,
+        name: image.name,
         settings,
         display,
       });
@@ -140,33 +150,105 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [image, settings, display]);
 
-  // Ganzes Fenster als Dropzone
+  // Ganzes Fenster als Dropzone (mit Overlay während des Ziehens)
   useEffect(() => {
-    const prevent = (e: DragEvent): void => e.preventDefault();
+    let depth = 0;
+    const hasFiles = (e: DragEvent): boolean =>
+      e.dataTransfer?.types.includes("Files") ?? false;
+    const onEnter = (e: DragEvent): void => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth++;
+      setDragging(true);
+    };
+    const onOver = (e: DragEvent): void => {
+      if (hasFiles(e)) e.preventDefault();
+    };
+    const onLeave = (e: DragEvent): void => {
+      if (!hasFiles(e)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setDragging(false);
+    };
     const onDrop = (e: DragEvent): void => {
       e.preventDefault();
+      depth = 0;
+      setDragging(false);
       const file = e.dataTransfer?.files[0];
       if (file) void loadBlob(file);
     };
-    window.addEventListener("dragover", prevent);
+    window.addEventListener("dragenter", onEnter);
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("dragleave", onLeave);
     window.addEventListener("drop", onDrop);
     return () => {
-      window.removeEventListener("dragover", prevent);
+      window.removeEventListener("dragenter", onEnter);
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("dragleave", onLeave);
       window.removeEventListener("drop", onDrop);
     };
   }, [loadBlob]);
 
+  // Bild aus der Zwischenablage einfügen (Strg/⌘+V)
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent): void => {
+      const target = e.target;
+      if (
+        target instanceof Element &&
+        target.closest("input, textarea, [contenteditable]")
+      )
+        return;
+      const item = [...(e.clipboardData?.items ?? [])].find(
+        (i) => i.kind === "file" && i.type.startsWith("image/"),
+      );
+      const file = item?.getAsFile();
+      if (!file) return;
+      e.preventDefault();
+      void loadBlob(
+        file,
+        file.name && file.name !== "image.png" ? file.name : "eingefuegt",
+      );
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [loadBlob]);
+
+  // Bottom-Sheet: Escape schließt, Seite dahinter scrollt nicht
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") setSheetOpen(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [sheetOpen]);
+
   const result = worker.result;
   // Mono liefert auch bei leerem Bitmap eine Ebene (d "") — nur sichtbare zählen
-  const contentLayers = useMemo(() => result?.layers.filter((l) => l.d) ?? [], [result]);
+  // id = Originalfarbe; bei doppelten Farben (gepinnte Palette mit gleichen
+  // Slots) eindeutig machen, damit Keys und Overrides nicht kollidieren
+  const contentLayers = useMemo<DisplayLayer[]>(() => {
+    const seen = new Set<string>();
+    return (result?.layers ?? [])
+      .filter((l) => l.d)
+      .map((l, i) => {
+        const id = seen.has(l.color) ? `${l.color}#${i}` : l.color;
+        seen.add(l.color);
+        return { ...l, id };
+      });
+  }, [result]);
   const emptyResult = result !== null && contentLayers.length === 0;
 
   // Ebenen-Overrides (Sichtbarkeit, Farbe) — reine Render-Operationen
   const displayLayers = useMemo<DisplayLayer[]>(
     () =>
       contentLayers
-        .filter((l) => overrides[l.color]?.hidden !== true)
-        .map((l) => ({ ...l, id: l.color, color: overrides[l.color]?.color ?? l.color })),
+        .filter((l) => overrides[l.id]?.hidden !== true)
+        .map((l) => ({ ...l, color: overrides[l.id]?.color ?? l.color })),
     [contentLayers, overrides],
   );
   const seam = settings.colorMode && displayLayers.length > 1;
@@ -203,7 +285,7 @@ export function App() {
             setLockedPalette(null);
           }}
           title="Alle Parameter auf Standard zurücksetzen"
-          className="rounded border border-ink-600 px-3 py-1.5 text-[12px] hover:border-accent-500"
+          className="shrink-0 whitespace-nowrap rounded border border-ink-600 px-3 py-1.5 text-[12px] hover:border-accent-500"
         >
           ↺ Zurücksetzen
         </button>
@@ -232,7 +314,7 @@ export function App() {
             paletteLocked={lockedPalette !== null}
             onSettings={(patch) => setSettings((s) => ({ ...s, ...patch }))}
             onDisplay={(patch) => setDisplay((d) => ({ ...d, ...patch }))}
-            onPickFile={() => fileInputRef.current?.click()}
+            onPickFile={pickFile}
             onLoadSample={loadSample}
           />
         );
@@ -242,21 +324,47 @@ export function App() {
             <aside className="hidden lg:block">{rail}</aside>
 
             <main className="space-y-3 pb-16 lg:pb-0">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <ViewTabs
                   view={display.view}
-                  onView={(v) => setDisplay({ ...display, view: v })}
+                  onView={(v) => setDisplay((d) => ({ ...d, view: v }))}
                 />
-                {worker.error ? (
-                  <span className="text-[12px] text-red-400">Fehler: {worker.error}</span>
-                ) : loadError ? (
-                  <span className="text-[12px] text-red-400">{loadError}</span>
-                ) : emptyResult ? (
-                  <span className="text-[12px] text-accent-400">
-                    0 Ebenen — Schwellwert, Invertierung oder Fleckfilter prüfen.
+                {image ? (
+                  <span
+                    className="truncate font-mono text-[11px] text-ink-300"
+                    title={image.name}
+                  >
+                    {image.name} · {dims}
                   </span>
                 ) : null}
               </div>
+              {worker.error || loadError ? (
+                <div
+                  role="alert"
+                  className="flex items-start justify-between gap-2 rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-[12px] text-red-300"
+                >
+                  <span>
+                    {worker.error ? `Fehler beim Tracen: ${worker.error}` : loadError}
+                  </span>
+                  {loadError && !worker.error ? (
+                    <button
+                      type="button"
+                      onClick={() => setLoadError(null)}
+                      aria-label="Meldung schließen"
+                      className="shrink-0 text-red-300 hover:text-red-100"
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                </div>
+              ) : emptyResult ? (
+                <p
+                  role="status"
+                  className="rounded border border-accent-500/40 bg-accent-500/10 px-3 py-2 text-[12px] text-accent-400"
+                >
+                  0 Ebenen — Schwellwert, Invertierung oder Fleckfilter prüfen.
+                </p>
+              ) : null}
               <Viewer
                 image={image}
                 layers={displayLayers}
@@ -264,6 +372,8 @@ export function App() {
                 display={display}
                 seam={seam}
                 busy={showBusy}
+                onPickFile={pickFile}
+                onLoadSample={loadSample}
               />
               <StatsBar
                 result={result}
@@ -281,7 +391,7 @@ export function App() {
                     setOverrides((o) => ({ ...o, [color]: { ...o[color], ...patch } }))
                   }
                   onOmitBackground={() => {
-                    const bg = contentLayers[0]?.color;
+                    const bg = contentLayers[0]?.id;
                     if (!bg) return;
                     setOverrides((o) => ({
                       ...o,
@@ -302,7 +412,10 @@ export function App() {
                   }
                 />
               ) : null}
-              <OutputPanel svg={svgString} />
+              <OutputPanel
+                svg={svgString}
+                fileName={svgFileName(image?.name ?? "vektorisiert")}
+              />
             </main>
 
             {/* Bottom-Sheet (nur mobil) */}
@@ -310,7 +423,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setSheetOpen(true)}
-                className="fixed inset-x-4 bottom-4 z-20 rounded-lg border border-ink-600 bg-ink-900/95 px-4 py-2.5 text-center text-[13px] font-medium shadow-lg backdrop-blur"
+                className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 rounded-lg border border-ink-600 bg-ink-900/95 px-4 py-2.5 text-center text-[13px] font-medium shadow-lg backdrop-blur"
               >
                 ⚙ Parameter
               </button>
@@ -322,7 +435,12 @@ export function App() {
                     onClick={() => setSheetOpen(false)}
                     className="fixed inset-0 z-30 bg-ink-950/60"
                   />
-                  <div className="fixed inset-x-0 bottom-0 z-40 max-h-[80vh] overflow-y-auto rounded-t-2xl border-t border-ink-600 bg-ink-950 p-4 pb-8">
+                  <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Parameter"
+                    className="fixed inset-x-0 bottom-0 z-40 max-h-[80vh] overflow-y-auto overscroll-contain rounded-t-2xl border-t border-ink-600 bg-ink-950 p-4 pb-[calc(2rem+env(safe-area-inset-bottom))]"
+                  >
                     <div className="mb-3 flex items-center justify-between">
                       <div className="mx-auto h-1 w-10 rounded-full bg-ink-600" />
                       <button
@@ -342,6 +460,15 @@ export function App() {
           </div>
         );
       })()}
+
+      {dragging ? (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-ink-950/80 p-6">
+          <div className="rounded-2xl border-2 border-dashed border-accent-500 px-10 py-12 text-center">
+            <strong className="block text-lg text-ink-100">Bild hier ablegen</strong>
+            <span className="font-mono text-[12px] text-ink-300">PNG · JPG · WEBP</span>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

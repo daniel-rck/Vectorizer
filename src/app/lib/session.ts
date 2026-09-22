@@ -16,6 +16,8 @@ export interface PersistedSession {
   w: number;
   h: number;
   scaled: boolean;
+  /** Quelldateiname (ab v0.2; ältere Sessions ohne). */
+  name?: string;
   settings: TraceSettings;
   display: DisplaySettings;
 }
